@@ -17,7 +17,7 @@ CREATE TABLE d03_time_zone_info (
   text VARCHAR NOT NULL
 );
 
-CREATE TABLE d04_d02_d03 (
+CREATE TABLE d04_link_d02_d03 (
   id VARCHAR NOT NULL PRIMARY KEY,
   d02_time_zone_utc_id VARCHAR NOT NULL,
   d03_time_zone_info_id VARCHAR NOT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE d04_d02_d03 (
   FOREIGN KEY(d03_time_zone_info_id) REFERENCES d03_time_zone_info(id)
 );
 
-CREATE TABLE d05_d01_d02 (
+CREATE TABLE d05_link_d01_d02 (
   id VARCHAR NOT NULL PRIMARY KEY,
   d01_citys_id VARCHAR NOT NULL,
   d02_time_zone_utc_id VARCHAR NOT NULL,
