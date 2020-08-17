@@ -39,8 +39,10 @@ table! {
     }
 }
 
+joinable!(d04_link_d02_d03 -> d02_time_zone_utc (d02_time_zone_utc_id));
 joinable!(d04_link_d02_d03 -> d03_time_zone_info (d03_time_zone_info_id));
 joinable!(d05_link_d01_d02 -> d01_citys (d01_citys_id));
+joinable!(d05_link_d01_d02 -> d02_time_zone_utc (d02_time_zone_utc_id));
 
 allow_tables_to_appear_in_same_query!(
     d01_citys,
