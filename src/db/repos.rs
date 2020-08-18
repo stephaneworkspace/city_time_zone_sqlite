@@ -11,7 +11,17 @@ use super::schema::d04_link_d02_d03;
 use super::schema::d05_link_d01_d02;
 use uuid::Uuid;
 
-pub struct RepoD01 {}
+pub struct RepoD01 {
+    connection: SqliteConnection,
+}
+
+impl RepoD01 {
+    pub fn new() -> RepoD01 {
+        RepoD01 {
+            connection: establish_connection(),
+        }
+    }
+}
 
 pub trait TraitRepoD01 {
     fn insert(&self, country: &str, name: &str, lat: f32, lng: f32) -> String;
@@ -26,7 +36,7 @@ impl TraitRepoD01 for RepoD01 {
         i_lat: f32,
         i_lng: f32,
     ) -> String {
-        let connection = establish_connection();
+        // let connection = establish_connection();
 
         let uuid = Uuid::new_v4().to_hyphenated().to_string();
 
@@ -40,7 +50,7 @@ impl TraitRepoD01 for RepoD01 {
 
         diesel::insert_into(d01_citys::table)
             .values(&new_d01)
-            .execute(&connection)
+            .execute(&self.connection)
             .expect("Error saving record d01_citys");
 
         uuid
