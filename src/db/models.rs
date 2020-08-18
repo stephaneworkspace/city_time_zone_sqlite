@@ -14,7 +14,7 @@ pub struct D01Citys {
 
 #[derive(Insertable)]
 #[table_name = "d01_citys"]
-pub struct NewD01City<'a> {
+pub struct InsertD01<'a> {
     pub id: &'a str,
     pub country: &'a str,
     pub name: &'a str,
@@ -30,7 +30,7 @@ pub struct D02TimeZoneUtc {
 
 #[derive(Insertable)]
 #[table_name = "d02_time_zone_utc"]
-pub struct NewD01City<'a> {
+pub struct InsertD02<'a> {
     pub id: &'a str,
     pub name: &'a str,
 }
@@ -44,7 +44,7 @@ pub struct D03TimeZoneInfo {
 
 #[derive(Insertable)]
 #[table_name = "d03_time_zone_info"]
-pub struct NewD03TimeZoneInfo<'a> {
+pub struct InsertD03<'a> {
     pub id: &'a str,
     pub offset: f32,
     pub text: &'a str,
@@ -59,10 +59,10 @@ pub struct D04LinkD02D03 {
 
 #[derive(Insertable)]
 #[table_name = "d04_link_d02_d03"]
-pub struct NewD04LinkD02D03<'a> {
+pub struct InsertD04<'a> {
     pub id: &'a str,
     pub d02_time_zone_utc_id: &'a str,
-    pub d03_time_zone_info_id: &'s str,
+    pub d03_time_zone_info_id: &'a str,
 }
 
 #[derive(Serialize, Queryable)]
@@ -74,8 +74,8 @@ pub struct D05LinkD01D02 {
 
 #[derive(Insertable)]
 #[table_name = "d05_link_d01_d02"]
-pub struct NewD05LinkD01D02<'a> {
+pub struct InsertD05<'a> {
     pub id: &'a str,
     pub d01_citys_id: &'a str,
-    pub d02_time_zone_utc_id: &'s str,
+    pub d02_time_zone_utc_id: &'a str,
 }
