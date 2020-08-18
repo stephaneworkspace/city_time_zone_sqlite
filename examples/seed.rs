@@ -8,9 +8,12 @@ extern crate serde_json;
 use std::fs::File;
 use std::io::Read;
 
-use city_time_zone_sqlite::{Repo, TraitRepoD01};
+use city_time_zone_sqlite::{
+    Repo, TraitRepoD01, TraitRepoD02, TraitRepoD03, TraitRepoD04, TraitRepoD05,
+};
 
 const PATH: &str = "assets/citys.json";
+const PATH_TZ: &str = "assets/tz_utc.json";
 
 #[derive(Debug, Clone)]
 pub struct Citys {
@@ -24,6 +27,18 @@ pub struct City {
     pub lat: f32,
     pub lng: f32,
     pub time_zone_name: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct TimeZones {
+    pub time_zone: Vec<TimeZone>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct TimeZone {
+    pub text: String,
+    pub offset: f32,
+    pub utc: Vec<String>,
 }
 
 impl Citys {
@@ -42,17 +57,40 @@ impl Citys {
     }
 }
 
+impl TimeZones {
+    fn new(path: &str) -> TimeZones {
+        let mut s = String::new();
+        let mut file_path: std::path::PathBuf = std::path::PathBuf::new();
+        file_path.push(std::env::current_dir().unwrap().as_path());
+        file_path.push(path);
+        File::open(file_path.as_path())
+            .unwrap()
+            .read_to_string(&mut s)
+            .unwrap();
+        TimeZones {
+            time_zone: serde_json::from_str(&s).unwrap(),
+        }
+    }
+}
+
 fn main() {
     println!("Seed database");
     // If this project is bigger, i need to put this code in one controller
     // for better reading of the code
     let mut i: u32 = 0;
     let citys = Citys::new(PATH);
+    let time_zones = TimeZones::new(PATH_TZ);
     let repo = Repo::new();
     for c in citys.city {
         let _record_d01_id =
             repo.d01_insert(c.country.as_ref(), c.name.as_ref(), c.lat, c.lng);
         i += 1;
     }
-    println!("{} records insert", i);
+    println!("d01 -> {} record(s) insert", i);
+    i = 0;
+    for t in time_zones.time_zone {
+        let _record_d02_id = repo.d03_insert(t.offset, t.text.as_ref());
+        i += 1;
+    }
+    println!("d03 -> {} record(s) insert", i);
 }
