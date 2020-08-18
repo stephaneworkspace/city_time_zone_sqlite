@@ -8,7 +8,7 @@ extern crate serde_json;
 use std::fs::File;
 use std::io::Read;
 
-use city_time_zone_sqlite::{RepoD01, TraitRepoD01};
+use city_time_zone_sqlite::{Repo, TraitRepoD01};
 
 const PATH: &str = "assets/citys.json";
 
@@ -48,10 +48,10 @@ fn main() {
     // for better reading of the code
     let mut i: u32 = 0;
     let citys = Citys::new(PATH);
-    let repo_d01 = RepoD01::new(); // TODO main Repo Struct with Trait
+    let repo = Repo::new();
     for c in citys.city {
         let _record_d01_id =
-            repo_d01.insert(c.country.as_ref(), c.name.as_ref(), c.lat, c.lng);
+            repo.d01_insert(c.country.as_ref(), c.name.as_ref(), c.lat, c.lng);
         i += 1;
     }
     println!("{} records insert", i);

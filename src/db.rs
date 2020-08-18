@@ -13,4 +13,4 @@ use schema::d02_time_zone_utc::dsl::*;
 use std::env;
 use uuid::Uuid;
 */
-pub use self::repos::{RepoD01, RepoD02, TraitRepoD01, TraitRepoD02};
+pub use self::repos::{Repo, TraitRepoD01, TraitRepoD02};

@@ -11,33 +11,61 @@ use super::schema::d04_link_d02_d03;
 use super::schema::d05_link_d01_d02;
 use uuid::Uuid;
 
-pub struct RepoD01 {
+pub struct Repo {
     connection: SqliteConnection,
 }
 
-impl RepoD01 {
-    pub fn new() -> RepoD01 {
-        RepoD01 {
+pub trait TraitRepoD01 {
+    fn d01_insert(
+        &self,
+        country: &str,
+        name: &str,
+        lat: f32,
+        lng: f32,
+    ) -> String;
+    fn d01_read_all(&self) -> Vec<D01Citys>;
+}
+
+pub trait TraitRepoD02 {
+    fn d02_insert(&self, name: &str) -> String;
+}
+
+pub trait TraitRepoD03 {
+    fn d03_insert(&self, offset: f32, text: &str) -> String;
+}
+
+pub trait TraitRepoD04 {
+    fn d04_insert(
+        &self,
+        d02_time_zone_utc_id: &str,
+        d03_time_zone_info_id: &str,
+    ) -> String;
+}
+
+pub trait TraitRepoD05 {
+    fn d05_insert(
+        &self,
+        d01_citys_id: &str,
+        d02_time_zone_utc_id: &str,
+    ) -> String;
+}
+
+impl Repo {
+    pub fn new() -> Repo {
+        Repo {
             connection: establish_connection(),
         }
     }
 }
 
-pub trait TraitRepoD01 {
-    fn insert(&self, country: &str, name: &str, lat: f32, lng: f32) -> String;
-    fn read_all(&self) -> Vec<D01Citys>;
-}
-
-impl TraitRepoD01 for RepoD01 {
-    fn insert(
+impl TraitRepoD01 for Repo {
+    fn d01_insert(
         &self,
         i_country: &str,
         i_name: &str,
         i_lat: f32,
         i_lng: f32,
     ) -> String {
-        // let connection = establish_connection();
-
         let uuid = Uuid::new_v4().to_hyphenated().to_string();
 
         let new_d01 = InsertD01 {
@@ -56,7 +84,7 @@ impl TraitRepoD01 for RepoD01 {
         uuid
     }
 
-    fn read_all(&self) -> Vec<D01Citys> {
+    fn d01_read_all(&self) -> Vec<D01Citys> {
         let connection = establish_connection();
         d01_citys
             //.filter(country.eq("Switzerland"))
@@ -65,16 +93,9 @@ impl TraitRepoD01 for RepoD01 {
             .expect("Error query d01_city")
     }
 }
-pub struct RepoD02 {}
 
-pub trait TraitRepoD02 {
-    fn insert(&self, name: &str) -> String;
-}
-
-impl TraitRepoD02 for RepoD02 {
-    fn insert(&self, i_name: &str) -> String {
-        let connection = establish_connection();
-
+impl TraitRepoD02 for Repo {
+    fn d02_insert(&self, i_name: &str) -> String {
         let uuid = Uuid::new_v4().to_hyphenated().to_string();
 
         let new_d02 = InsertD02 {
@@ -84,23 +105,15 @@ impl TraitRepoD02 for RepoD02 {
 
         diesel::insert_into(d02_time_zone_utc::table)
             .values(&new_d02)
-            .execute(&connection)
+            .execute(&self.connection)
             .expect("Error saving record d02_time_zone_utc");
 
         uuid
     }
 }
 
-pub struct RepoD03 {}
-
-pub trait TraitRepoD03 {
-    fn insert(&self, offset: f32, text: &str) -> String;
-}
-
-impl TraitRepoD03 for RepoD03 {
-    fn insert(&self, i_offset: f32, i_text: &str) -> String {
-        let connection = establish_connection();
-
+impl TraitRepoD03 for Repo {
+    fn d03_insert(&self, i_offset: f32, i_text: &str) -> String {
         let uuid = Uuid::new_v4().to_hyphenated().to_string();
 
         let new_d03 = InsertD03 {
@@ -111,31 +124,19 @@ impl TraitRepoD03 for RepoD03 {
 
         diesel::insert_into(d03_time_zone_info::table)
             .values(&new_d03)
-            .execute(&connection)
+            .execute(&self.connection)
             .expect("Error saving record d03_time_zone_info");
 
         uuid
     }
 }
 
-pub struct RepoD04 {}
-
-pub trait TraitRepoD04 {
-    fn insert(
-        &self,
-        d02_time_zone_utc_id: &str,
-        d03_time_zone_info_id: &str,
-    ) -> String;
-}
-
-impl TraitRepoD04 for RepoD04 {
-    fn insert(
+impl TraitRepoD04 for Repo {
+    fn d04_insert(
         &self,
         i_d02_time_zone_utc_id: &str,
         i_d03_time_zone_info_id: &str,
     ) -> String {
-        let connection = establish_connection();
-
         let uuid = Uuid::new_v4().to_hyphenated().to_string();
 
         let new_d04 = InsertD04 {
@@ -146,27 +147,19 @@ impl TraitRepoD04 for RepoD04 {
 
         diesel::insert_into(d04_link_d02_d03::table)
             .values(&new_d04)
-            .execute(&connection)
+            .execute(&self.connection)
             .expect("Error saving record d04_link_d02_d03");
 
         uuid
     }
 }
 
-pub struct RepoD05 {}
-
-pub trait TraitRepoD05 {
-    fn insert(&self, d01_citys_id: &str, d02_time_zone_utc_id: &str) -> String;
-}
-
-impl TraitRepoD05 for RepoD05 {
-    fn insert(
+impl TraitRepoD05 for Repo {
+    fn d05_insert(
         &self,
         i_d01_citys_id: &str,
         i_d02_time_zone_utc_id: &str,
     ) -> String {
-        let connection = establish_connection();
-
         let uuid = Uuid::new_v4().to_hyphenated().to_string();
 
         let new_d05 = InsertD05 {
@@ -177,7 +170,7 @@ impl TraitRepoD05 for RepoD05 {
 
         diesel::insert_into(d05_link_d01_d02::table)
             .values(&new_d05)
-            .execute(&connection)
+            .execute(&self.connection)
             .expect("Error saving record d05_link_d01_d02");
 
         uuid
