@@ -31,7 +31,6 @@ pub struct D02TimeZoneUtc {
 #[derive(Insertable)]
 #[table_name = "d02_time_zone_utc"]
 pub struct InsertD02<'a> {
-    pub id: &'a str,
     pub name: &'a str,
 }
 

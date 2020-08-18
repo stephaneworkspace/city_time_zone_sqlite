@@ -13,3 +13,5 @@ Cargo.lock
 # Added by cargo
 
 /target
+
+./city_time_zone.db
