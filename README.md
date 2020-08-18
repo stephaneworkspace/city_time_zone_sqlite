@@ -6,8 +6,8 @@ brew install sqlite3
 cargo install diesel_cli
 ````
 
-For create the db
+For create the db (this take 7min ~)
+(this delete the db in .env)
 ````
-diesel migration run
-cargo run --example seed
+./seed.sh
 ````
