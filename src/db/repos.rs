@@ -176,6 +176,8 @@ impl TraitRepoD05 for Repo {
         uuid
     }
 }
+
+/// Connection to Sqlite
 fn establish_connection() -> SqliteConnection {
     dotenv().ok();
 
