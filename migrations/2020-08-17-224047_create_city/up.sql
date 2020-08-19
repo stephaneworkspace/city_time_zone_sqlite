@@ -34,5 +34,5 @@ CREATE TABLE d05_link_d01_d02 (
   d02_time_zone_utc_id VARCHAR NOT NULL,
   FOREIGN KEY(d01_citys_id) REFERENCES d01_citys(id),
   FOREIGN KEY(d02_time_zone_utc_id) REFERENCES d02_time_zone_utc(id),
-  UNIQUE (d02_citys_id, d02_time_zone_utc_id)
+  UNIQUE (d01_citys_id, d02_time_zone_utc_id)
 );
