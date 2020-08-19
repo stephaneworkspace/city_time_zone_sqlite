@@ -14,4 +14,4 @@ Cargo.lock
 
 /target
 
-./city_time_zone.db
+city_time_zone.db
