@@ -208,9 +208,26 @@ fn main() {
         }
     }
     println!("d03 -> {} record(s) insert", i);
-    println!("{:?}", temp_d04);
+    // println!("{:?}", temp_d04);
     // d04
     i = 0;
+    for t_d04 in temp_d04 {
+        //t_d04 = d02
+        for t_d03 in t_d04.d03 {
+            let res = repo.d04_insert(t_d04.id.as_ref(), t_d03.id.as_ref());
+            match res {
+                Ok(()) => {
+                    i += 1;
+                }
+                Err(AppError { err_type, message }) => match err_type {
+                    _ => {
+                        panic!("{:?} {:?}", err_type, message);
+                    }
+                },
+            }
+        }
+    }
+    println!("d04 -> {} record(s) insert", i);
 }
 /*
  * pub enum ErrorType {
