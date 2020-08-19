@@ -18,6 +18,31 @@ pub struct Repo {
     connection: SqliteConnection,
 }
 
+fn unique_violation_security(
+    res: Result<usize, AppError>,
+    uuid: String,
+    i: usize,
+) -> (bool, Result<String, AppError>) {
+    match res {
+        Err(AppError { err_type, message }) => {
+            if err_type == ErrorType::UniqueViolation {
+                // Security for using VARCHAR uuid PRIMARY KEY in Sqlite
+                if i >= MAX_SQL_INSERT_UNIQUE {
+                    return (true, Result::Err(AppError { err_type, message }));
+                } else {
+                    return (
+                        false,
+                        Result::Err(AppError { err_type, message }),
+                    );
+                }
+            } else {
+                return (true, Result::Err(AppError { err_type, message }));
+            }
+        }
+        _ => return (true, Result::Ok(uuid)),
+    }
+}
+
 pub trait TraitRepoD01 {
     fn d01_insert(
         &self,
@@ -69,7 +94,7 @@ impl TraitRepoD01 for Repo {
         i_lat: f32,
         i_lng: f32,
     ) -> Result<String, AppError> {
-        let mut i = 0;
+        let mut i: usize = 0;
         loop {
             let uuid = Uuid::new_v4().to_hyphenated().to_string();
 
@@ -88,7 +113,7 @@ impl TraitRepoD01 for Repo {
                     AppError::from_diesel_err(err, "while insert d01_citys")
                 });
 
-            match insert {
+            /*            match insert {
                 Err(AppError { err_type, message }) => {
                     if err_type == ErrorType::UniqueViolation {
                         // Security for using VARCHAR uuid PRIMARY KEY in Sqlite
@@ -102,6 +127,12 @@ impl TraitRepoD01 for Repo {
                     }
                 }
                 _ => return Result::Ok(uuid.to_string()),
+            }*/
+            let res = unique_violation_security(insert, uuid.to_string(), i);
+            if !res.0 {
+                i += 1
+            } else {
+                return res.1;
             }
         }
     }
