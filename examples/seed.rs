@@ -8,7 +8,6 @@ extern crate serde_json;
 use std::fs::File;
 use std::io::Read;
 use std::panic;
-use uuid::Uuid;
 
 use city_time_zone_sqlite::{
     AppError, ErrorType, Repo, TraitRepoD01, TraitRepoD02, TraitRepoD03,
@@ -85,28 +84,11 @@ fn main() {
     let time_zones = TimeZones::new(PATH_TZ);
     let repo = Repo::new();
     for c in &citys.city {
-        let uuid = if i == 5 || i == 6 {
-            "test".to_string()
-        } else {
-            Uuid::new_v4().to_hyphenated().to_string()
-        };
-        let res = repo.d01_insert(
-            uuid.as_ref(),
-            c.country.as_ref(),
-            c.name.as_ref(),
-            c.lat,
-            c.lng,
-        );
+        let res =
+            repo.d01_insert(c.country.as_ref(), c.name.as_ref(), c.lat, c.lng);
         match res {
             Ok(_id) => i += 1,
             Err(AppError { err_type, message }) => match err_type {
-                ErrorType::UniqueViolation => {
-                    println!(
-                        "d01 -> unique violation -> {} -> {}",
-                        message, uuid
-                    );
-                    i += 1;
-                }
                 _ => {
                     panic!("{:?} {:?}", err_type, message);
                 }
@@ -121,10 +103,7 @@ fn main() {
             match res {
                 Ok(_id) => i += 1,
                 Err(AppError { err_type, message }) => match err_type {
-                    ErrorType::UniqueViolation => {
-                        //println!("d02 -> {} unique violation", t);
-                        i += 1;
-                    }
+                    ErrorType::UniqueViolation => {}
                     _ => {
                         panic!("{:?} {:?}", err_type, message);
                     }
@@ -133,7 +112,6 @@ fn main() {
         }
     }
     println!("d02 -> {} record(s) insert", i);
-    // InsertD02 id/name
     i = 0;
     for t in time_zones.time_zone {
         let res = repo.d03_insert(t.offset, t.text.as_ref());
@@ -142,13 +120,7 @@ fn main() {
             Err(AppError { err_type, message }) => {
                 println!("{:?}: {}", err_type, message);
                 panic!(t.text)
-            } /*
-              err => match err {
-                  UniqueViolation => {
-                      println!("d03 -> {} unique violation", t.text.as_ref())
-                  }
-                  _ => panic!("{:?}", msg),
-              },*/
+            }
         }
     }
     println!("d03 -> {} record(s) insert", i);

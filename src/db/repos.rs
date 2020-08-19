@@ -2,7 +2,7 @@ use diesel::prelude::*;
 use dotenv::dotenv;
 use std::env;
 
-use super::errors::AppError;
+use super::errors::{AppError, ErrorType};
 use super::models::*;
 use super::schema::d01_citys;
 use super::schema::d01_citys::dsl::*;
@@ -12,6 +12,8 @@ use super::schema::d04_link_d02_d03;
 use super::schema::d05_link_d01_d02;
 use uuid::Uuid;
 
+const MAX_SQL_INSERT_UNIQUE: usize = 5;
+
 pub struct Repo {
     connection: SqliteConnection,
 }
@@ -19,7 +21,6 @@ pub struct Repo {
 pub trait TraitRepoD01 {
     fn d01_insert(
         &self,
-        id: &str,
         country: &str,
         name: &str,
         lat: f32,
@@ -63,32 +64,45 @@ impl Repo {
 impl TraitRepoD01 for Repo {
     fn d01_insert(
         &self,
-        i_id: &str,
         i_country: &str,
         i_name: &str,
         i_lat: f32,
         i_lng: f32,
     ) -> Result<String, AppError> {
-        // let uuid = Uuid::new_v4().to_hyphenated().to_string();
-        let uuid = i_id;
-        let new_d01 = InsertD01 {
-            id: &uuid,
-            country: i_country,
-            name: i_name,
-            lat: i_lat,
-            lng: i_lng,
-        };
+        let mut i = 0;
+        loop {
+            let uuid = Uuid::new_v4().to_hyphenated().to_string();
 
-        let insert = diesel::insert_into(d01_citys::table)
-            .values(&new_d01)
-            .execute(&self.connection)
-            .map_err(|err| {
-                AppError::from_diesel_err(err, "while insert d01_citys")
-            });
+            let new_d01 = InsertD01 {
+                id: &uuid,
+                country: i_country,
+                name: i_name,
+                lat: i_lat,
+                lng: i_lng,
+            };
 
-        match insert {
-            Err(err) => Err(err),
-            _ => Ok(uuid.to_string()),
+            let insert = diesel::insert_into(d01_citys::table)
+                .values(&new_d01)
+                .execute(&self.connection)
+                .map_err(|err| {
+                    AppError::from_diesel_err(err, "while insert d01_citys")
+                });
+
+            match insert {
+                Err(AppError { err_type, message }) => {
+                    if err_type == ErrorType::UniqueViolation {
+                        // Security for using VARCHAR uuid PRIMARY KEY in Sqlite
+                        if i >= MAX_SQL_INSERT_UNIQUE {
+                            return Result::Err(AppError { err_type, message });
+                        } else {
+                            i += 1;
+                        }
+                    } else {
+                        return Result::Err(AppError { err_type, message });
+                    }
+                }
+                _ => return Result::Ok(uuid.to_string()),
+            }
         }
     }
 
