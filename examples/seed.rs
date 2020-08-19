@@ -133,17 +133,53 @@ fn main() {
     // d02
     i = 0;
     let mut temp_d04: Vec<TempD04D02> = Vec::new();
-    for c in citys.city {
-        for t in c.time_zone_name {
-            let res = repo.d02_insert(t.as_ref());
+    for city in citys.city {
+        for t in city.time_zone_name {
+            let res = repo.d02_insert(t.clone().as_ref());
             match res {
                 Ok(id) => {
                     temp_d04.push(TempD04D02 {
-                        id: id,
-                        name: t,
+                        id: id.clone(),
+                        name: t.clone(),
                         d03: Vec::new(),
                     });
+                    let clone_d05: Vec<TempD05D01> = temp_d05.clone();
+                    temp_d05 = Vec::new();
                     i += 1;
+                    for c in clone_d05 {
+                        if c.name == city.name {
+                            let mut temp_d02 = Vec::new();
+                            for c_d02 in c.d02 {
+                                temp_d02.push(TempD05D02 {
+                                    id: c_d02.id,
+                                    name: c_d02.name,
+                                });
+                            }
+                            // Add
+                            temp_d02.push(TempD05D02 {
+                                id: id.clone(),
+                                name: t.clone(),
+                            });
+                            temp_d05.push(TempD05D01 {
+                                id: c.id,
+                                name: c.name,
+                                d02: temp_d02,
+                            });
+                        } else {
+                            let mut temp_d02 = Vec::new();
+                            for c_d02 in c.d02 {
+                                temp_d02.push(TempD05D02 {
+                                    id: c_d02.id,
+                                    name: c_d02.name,
+                                });
+                            }
+                            temp_d05.push(TempD05D01 {
+                                id: c.id,
+                                name: c.name,
+                                d02: temp_d02,
+                            });
+                        }
+                    }
                 }
                 Err(AppError { err_type, message }) => match err_type {
                     ErrorType::UniqueViolation => {}
@@ -155,6 +191,10 @@ fn main() {
         }
     }
     println!("d02 -> {} record(s) insert", i);
+    /*for t in &temp_d05 {
+        println!("{}", t.d02.len());
+    }*/
+    //println!("{:?}", temp_d05);
     // d03
     i = 0;
     for t in time_zones.time_zone {
@@ -228,6 +268,26 @@ fn main() {
         }
     }
     println!("d04 -> {} record(s) insert", i);
+    // d05
+    i = 0;
+    for t_d05 in temp_d05 {
+        //t_d05 = d01
+        for t_d02 in t_d05.d02 {
+            let res = repo.d05_insert(t_d05.id.as_ref(), t_d02.id.as_ref());
+            match res {
+                Ok(()) => {
+                    println!("{}", t_d05.name);
+                    i += 1;
+                }
+                Err(AppError { err_type, message }) => match err_type {
+                    _ => {
+                        panic!("{:?} {:?}", err_type, message);
+                    }
+                },
+            }
+        }
+    }
+    println!("d05 -> {} record(s) insert", i);
 }
 /*
  * pub enum ErrorType {
