@@ -2,6 +2,7 @@ use diesel::prelude::*;
 use dotenv::dotenv;
 use std::env;
 
+use super::errors::AppError;
 use super::models::*;
 use super::schema::d01_citys;
 use super::schema::d01_citys::dsl::*;
@@ -31,7 +32,7 @@ pub trait TraitRepoD02 {
 }
 
 pub trait TraitRepoD03 {
-    fn d03_insert(&self, offset: f32, text: &str) -> String;
+    fn d03_insert(&self, offset: f32, text: &str) -> Result<String, AppError>;
 }
 
 pub trait TraitRepoD04 {
@@ -113,7 +114,11 @@ impl TraitRepoD02 for Repo {
 }
 
 impl TraitRepoD03 for Repo {
-    fn d03_insert(&self, i_offset: f32, i_text: &str) -> String {
+    fn d03_insert(
+        &self,
+        i_offset: f32,
+        i_text: &str,
+    ) -> Result<String, AppError> {
         let uuid = Uuid::new_v4().to_hyphenated().to_string();
 
         let new_d03 = InsertD03 {
@@ -122,12 +127,22 @@ impl TraitRepoD03 for Repo {
             text: i_text,
         };
 
-        diesel::insert_into(d03_time_zone_info::table)
+        let insert = diesel::insert_into(d03_time_zone_info::table)
             .values(&new_d03)
             .execute(&self.connection)
-            .expect("Error saving record d03_time_zone_info");
-
-        uuid
+            .map_err(|err| {
+                AppError::from_diesel_err(
+                    err,
+                    "while insert d03_time_zone_info",
+                )
+            });
+        //.expect("Error saving record d03_time_zone_info");
+        // INFO I write this code because Sqlite don't support .get_result
+        //      For a PG SQL this method is not the best !
+        match insert {
+            Err(err) => Err(err),
+            _ => Ok(uuid),
+        }
     }
 }
 

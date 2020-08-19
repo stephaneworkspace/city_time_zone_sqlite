@@ -7,9 +7,11 @@ extern crate serde_json;
 // use serde::Serialize;
 use std::fs::File;
 use std::io::Read;
+use std::panic;
 
 use city_time_zone_sqlite::{
-    Repo, TraitRepoD01, TraitRepoD02, TraitRepoD03, TraitRepoD04, TraitRepoD05,
+    AppError, ErrorType, Repo, TraitRepoD01, TraitRepoD02, TraitRepoD03,
+    TraitRepoD04, TraitRepoD05,
 };
 
 const PATH: &str = "assets/citys.json";
@@ -89,8 +91,27 @@ fn main() {
     println!("d01 -> {} record(s) insert", i);
     i = 0;
     for t in time_zones.time_zone {
-        let _record_d02_id = repo.d03_insert(t.offset, t.text.as_ref());
-        i += 1;
+        let record_d03_id = repo.d03_insert(t.offset, &t.text.as_ref());
+        match record_d03_id {
+            Ok(_id) => i += 1,
+            Err(AppError { err_type, message }) => {
+                println!("{:?}: {}", err_type, message)
+            } /*
+              err => match err {
+                  UniqueViolation => {
+                      println!("d03 -> {} unique violation", t.text.as_ref())
+                  }
+                  _ => panic!("{:?}", msg),
+              },*/
+        }
     }
     println!("d03 -> {} record(s) insert", i);
 }
+/*
+ * pub enum ErrorType {
+    Internal,
+    NotFound,
+    UniqueViolation,
+}
+
+*/
