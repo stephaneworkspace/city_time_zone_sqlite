@@ -28,7 +28,7 @@ pub trait TraitRepoD01 {
 }
 
 pub trait TraitRepoD02 {
-    fn d02_insert(&self, name: &str) -> String;
+    fn d02_insert(&self, name: &str) -> Result<String, AppError>;
 }
 
 pub trait TraitRepoD03 {
@@ -96,7 +96,7 @@ impl TraitRepoD01 for Repo {
 }
 
 impl TraitRepoD02 for Repo {
-    fn d02_insert(&self, i_name: &str) -> String {
+    fn d02_insert(&self, i_name: &str) -> Result<String, AppError> {
         let uuid = Uuid::new_v4().to_hyphenated().to_string();
 
         let new_d02 = InsertD02 {
@@ -104,12 +104,17 @@ impl TraitRepoD02 for Repo {
             name: i_name,
         };
 
-        diesel::insert_into(d02_time_zone_utc::table)
+        let insert = diesel::insert_into(d02_time_zone_utc::table)
             .values(&new_d02)
             .execute(&self.connection)
-            .expect("Error saving record d02_time_zone_utc");
+            .map_err(|err| {
+                AppError::from_diesel_err(err, "while insert d02_time_zone_utc")
+            });
 
-        uuid
+        match insert {
+            Err(err) => Err(err),
+            _ => Ok(uuid),
+        }
     }
 }
 
@@ -136,9 +141,7 @@ impl TraitRepoD03 for Repo {
                     "while insert d03_time_zone_info",
                 )
             });
-        //.expect("Error saving record d03_time_zone_info");
-        // INFO I write this code because Sqlite don't support .get_result
-        //      For a PG SQL this method is not the best !
+
         match insert {
             Err(err) => Err(err),
             _ => Ok(uuid),

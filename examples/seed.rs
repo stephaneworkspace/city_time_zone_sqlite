@@ -90,6 +90,9 @@ fn main() {
     }
     println!("d01 -> {} record(s) insert", i);
     i = 0;
+    println!("d02 -> {} record(s) insert", i);
+    // InsertD02 id/name
+    i = 0;
     for t in time_zones.time_zone {
         let record_d03_id = repo.d03_insert(t.offset, t.text.as_ref());
         match record_d03_id {
