@@ -12,35 +12,10 @@ use super::schema::d04_link_d02_d03;
 use super::schema::d05_link_d01_d02;
 use uuid::Uuid;
 
-const MAX_SQL_INSERT_UNIQUE: usize = 5;
+const MAX_SQL_INSERT_UNIQUE: usize = 15;
 
 pub struct Repo {
     connection: SqliteConnection,
-}
-
-fn unique_violation_security(
-    res: Result<usize, AppError>,
-    uuid: String,
-    i: usize,
-) -> (bool, Result<String, AppError>) {
-    match res {
-        Err(AppError { err_type, message }) => {
-            if err_type == ErrorType::UniqueViolation {
-                // Security for using VARCHAR uuid PRIMARY KEY in Sqlite
-                if i >= MAX_SQL_INSERT_UNIQUE {
-                    return (true, Result::Err(AppError { err_type, message }));
-                } else {
-                    return (
-                        false,
-                        Result::Err(AppError { err_type, message }),
-                    );
-                }
-            } else {
-                return (true, Result::Err(AppError { err_type, message }));
-            }
-        }
-        _ => return (true, Result::Ok(uuid)),
-    }
 }
 
 pub trait TraitRepoD01 {
@@ -113,21 +88,6 @@ impl TraitRepoD01 for Repo {
                     AppError::from_diesel_err(err, "while insert d01_citys")
                 });
 
-            /*            match insert {
-                Err(AppError { err_type, message }) => {
-                    if err_type == ErrorType::UniqueViolation {
-                        // Security for using VARCHAR uuid PRIMARY KEY in Sqlite
-                        if i >= MAX_SQL_INSERT_UNIQUE {
-                            return Result::Err(AppError { err_type, message });
-                        } else {
-                            i += 1;
-                        }
-                    } else {
-                        return Result::Err(AppError { err_type, message });
-                    }
-                }
-                _ => return Result::Ok(uuid.to_string()),
-            }*/
             let res = unique_violation_security(insert, uuid.to_string(), i);
             if !res.0 {
                 i += 1
@@ -259,4 +219,29 @@ fn establish_connection() -> SqliteConnection {
         env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     SqliteConnection::establish(&database_url)
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
+}
+
+/// Security for UUID don't garrented without collision (PRIMARY KEY in Sqlite)
+fn unique_violation_security(
+    res: Result<usize, AppError>,
+    uuid: String,
+    i: usize,
+) -> (bool, Result<String, AppError>) {
+    match res {
+        Err(AppError { err_type, message }) => {
+            if err_type == ErrorType::UniqueViolation {
+                if i >= MAX_SQL_INSERT_UNIQUE {
+                    return (true, Result::Err(AppError { err_type, message }));
+                } else {
+                    return (
+                        false,
+                        Result::Err(AppError { err_type, message }),
+                    );
+                }
+            } else {
+                return (true, Result::Err(AppError { err_type, message }));
+            }
+        }
+        _ => return (true, Result::Ok(uuid)),
+    }
 }
