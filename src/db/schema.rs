@@ -24,16 +24,14 @@ table! {
 }
 
 table! {
-    d04_link_d02_d03 (id) {
-        id -> Text,
+    d04_link_d02_d03 (d02_time_zone_utc_id, d03_time_zone_info_id) {
         d02_time_zone_utc_id -> Text,
         d03_time_zone_info_id -> Text,
     }
 }
 
 table! {
-    d05_link_d01_d02 (id) {
-        id -> Text,
+    d05_link_d01_d02 (d01_citys_id, d02_time_zone_utc_id) {
         d01_citys_id -> Text,
         d02_time_zone_utc_id -> Text,
     }

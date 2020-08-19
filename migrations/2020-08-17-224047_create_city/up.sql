@@ -20,19 +20,17 @@ CREATE TABLE d03_time_zone_info (
 );
 
 CREATE TABLE d04_link_d02_d03 (
-  id VARCHAR NOT NULL PRIMARY KEY,
   d02_time_zone_utc_id VARCHAR NOT NULL,
   d03_time_zone_info_id VARCHAR NOT NULL,
+  PRIMARY KEY(d02_time_zone_utc_id, d03_time_zone_info_id),
   FOREIGN KEY(d02_time_zone_utc_id) REFERENCES d02_time_zone_utc(id),
-  FOREIGN KEY(d03_time_zone_info_id) REFERENCES d03_time_zone_info(id),
-  UNIQUE (d02_time_zone_utc_id, d03_time_zone_info_id)
+  FOREIGN KEY(d03_time_zone_info_id) REFERENCES d03_time_zone_info(id)
 );
 
 CREATE TABLE d05_link_d01_d02 (
-  id VARCHAR NOT NULL PRIMARY KEY,
   d01_citys_id VARCHAR NOT NULL,
   d02_time_zone_utc_id VARCHAR NOT NULL,
+  PRIMARY KEY (d01_citys_id, d02_time_zone_utc_id),
   FOREIGN KEY(d01_citys_id) REFERENCES d01_citys(id),
-  FOREIGN KEY(d02_time_zone_utc_id) REFERENCES d02_time_zone_utc(id),
-  UNIQUE (d01_citys_id, d02_time_zone_utc_id)
+  FOREIGN KEY(d02_time_zone_utc_id) REFERENCES d02_time_zone_utc(id)
 );

@@ -52,7 +52,6 @@ pub struct InsertD03<'a> {
 
 #[derive(Serialize, Queryable)]
 pub struct D04LinkD02D03 {
-    pub id: String,
     pub d02_time_zone_utc_id: String,
     pub d03_time_zone_info_id: String,
 }
@@ -60,14 +59,12 @@ pub struct D04LinkD02D03 {
 #[derive(Insertable)]
 #[table_name = "d04_link_d02_d03"]
 pub struct InsertD04<'a> {
-    pub id: &'a str,
     pub d02_time_zone_utc_id: &'a str,
     pub d03_time_zone_info_id: &'a str,
 }
 
 #[derive(Serialize, Queryable)]
 pub struct D05LinkD01D02 {
-    pub id: String,
     pub d01_citys_id: String,
     pub d02_time_zone_utc_id: String,
 }
@@ -75,7 +72,6 @@ pub struct D05LinkD01D02 {
 #[derive(Insertable)]
 #[table_name = "d05_link_d01_d02"]
 pub struct InsertD05<'a> {
-    pub id: &'a str,
     pub d01_citys_id: &'a str,
     pub d02_time_zone_utc_id: &'a str,
 }

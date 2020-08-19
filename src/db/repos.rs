@@ -19,11 +19,12 @@ pub struct Repo {
 pub trait TraitRepoD01 {
     fn d01_insert(
         &self,
+        id: &str,
         country: &str,
         name: &str,
         lat: f32,
         lng: f32,
-    ) -> String;
+    ) -> Result<String, AppError>;
     fn d01_read_all(&self) -> Vec<D01Citys>;
 }
 
@@ -40,7 +41,7 @@ pub trait TraitRepoD04 {
         &self,
         d02_time_zone_utc_id: &str,
         d03_time_zone_info_id: &str,
-    ) -> String;
+    ) -> Result<(), AppError>;
 }
 
 pub trait TraitRepoD05 {
@@ -48,7 +49,7 @@ pub trait TraitRepoD05 {
         &self,
         d01_citys_id: &str,
         d02_time_zone_utc_id: &str,
-    ) -> String;
+    ) -> Result<(), AppError>;
 }
 
 impl Repo {
@@ -62,13 +63,14 @@ impl Repo {
 impl TraitRepoD01 for Repo {
     fn d01_insert(
         &self,
+        i_id: &str,
         i_country: &str,
         i_name: &str,
         i_lat: f32,
         i_lng: f32,
-    ) -> String {
-        let uuid = Uuid::new_v4().to_hyphenated().to_string();
-
+    ) -> Result<String, AppError> {
+        // let uuid = Uuid::new_v4().to_hyphenated().to_string();
+        let uuid = i_id;
         let new_d01 = InsertD01 {
             id: &uuid,
             country: i_country,
@@ -77,12 +79,17 @@ impl TraitRepoD01 for Repo {
             lng: i_lng,
         };
 
-        diesel::insert_into(d01_citys::table)
+        let insert = diesel::insert_into(d01_citys::table)
             .values(&new_d01)
             .execute(&self.connection)
-            .expect("Error saving record d01_citys");
+            .map_err(|err| {
+                AppError::from_diesel_err(err, "while insert d01_citys")
+            });
 
-        uuid
+        match insert {
+            Err(err) => Err(err),
+            _ => Ok(uuid.to_string()),
+        }
     }
 
     fn d01_read_all(&self) -> Vec<D01Citys> {
@@ -154,21 +161,23 @@ impl TraitRepoD04 for Repo {
         &self,
         i_d02_time_zone_utc_id: &str,
         i_d03_time_zone_info_id: &str,
-    ) -> String {
-        let uuid = Uuid::new_v4().to_hyphenated().to_string();
-
+    ) -> Result<(), AppError> {
         let new_d04 = InsertD04 {
-            id: &uuid,
             d02_time_zone_utc_id: i_d02_time_zone_utc_id,
             d03_time_zone_info_id: i_d03_time_zone_info_id,
         };
 
-        diesel::insert_into(d04_link_d02_d03::table)
+        let insert = diesel::insert_into(d04_link_d02_d03::table)
             .values(&new_d04)
             .execute(&self.connection)
-            .expect("Error saving record d04_link_d02_d03");
+            .map_err(|err| {
+                AppError::from_diesel_err(err, "while insert d04_link_d02_d03")
+            });
 
-        uuid
+        match insert {
+            Err(err) => Err(err),
+            _ => Ok(()),
+        }
     }
 }
 
@@ -177,21 +186,23 @@ impl TraitRepoD05 for Repo {
         &self,
         i_d01_citys_id: &str,
         i_d02_time_zone_utc_id: &str,
-    ) -> String {
-        let uuid = Uuid::new_v4().to_hyphenated().to_string();
-
+    ) -> Result<(), AppError> {
         let new_d05 = InsertD05 {
-            id: &uuid,
             d01_citys_id: i_d01_citys_id,
             d02_time_zone_utc_id: i_d02_time_zone_utc_id,
         };
 
-        diesel::insert_into(d05_link_d01_d02::table)
+        let insert = diesel::insert_into(d05_link_d01_d02::table)
             .values(&new_d05)
             .execute(&self.connection)
-            .expect("Error saving record d05_link_d01_d02");
+            .map_err(|err| {
+                AppError::from_diesel_err(err, "while insert d05_link_d01_d02")
+            });
 
-        uuid
+        match insert {
+            Err(err) => Err(err),
+            _ => Ok(()),
+        }
     }
 }
 

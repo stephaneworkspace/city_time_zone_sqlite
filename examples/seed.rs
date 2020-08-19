@@ -8,6 +8,7 @@ extern crate serde_json;
 use std::fs::File;
 use std::io::Read;
 use std::panic;
+use uuid::Uuid;
 
 use city_time_zone_sqlite::{
     AppError, ErrorType, Repo, TraitRepoD01, TraitRepoD02, TraitRepoD03,
@@ -83,19 +84,60 @@ fn main() {
     let citys = Citys::new(PATH);
     let time_zones = TimeZones::new(PATH_TZ);
     let repo = Repo::new();
-    for c in citys.city {
-        let _record_d01_id =
-            repo.d01_insert(c.country.as_ref(), c.name.as_ref(), c.lat, c.lng);
-        i += 1;
+    for c in &citys.city {
+        let uuid = if i == 5 || i == 6 {
+            "test".to_string()
+        } else {
+            Uuid::new_v4().to_hyphenated().to_string()
+        };
+        let res = repo.d01_insert(
+            uuid.as_ref(),
+            c.country.as_ref(),
+            c.name.as_ref(),
+            c.lat,
+            c.lng,
+        );
+        match res {
+            Ok(_id) => i += 1,
+            Err(AppError { err_type, message }) => match err_type {
+                ErrorType::UniqueViolation => {
+                    println!(
+                        "d01 -> unique violation -> {} -> {}",
+                        message, uuid
+                    );
+                    i += 1;
+                }
+                _ => {
+                    panic!("{:?} {:?}", err_type, message);
+                }
+            },
+        }
     }
     println!("d01 -> {} record(s) insert", i);
     i = 0;
+    for c in citys.city {
+        for t in c.time_zone_name {
+            let res = repo.d02_insert(t.as_ref());
+            match res {
+                Ok(_id) => i += 1,
+                Err(AppError { err_type, message }) => match err_type {
+                    ErrorType::UniqueViolation => {
+                        //println!("d02 -> {} unique violation", t);
+                        i += 1;
+                    }
+                    _ => {
+                        panic!("{:?} {:?}", err_type, message);
+                    }
+                },
+            }
+        }
+    }
     println!("d02 -> {} record(s) insert", i);
     // InsertD02 id/name
     i = 0;
     for t in time_zones.time_zone {
-        let record_d03_id = repo.d03_insert(t.offset, t.text.as_ref());
-        match record_d03_id {
+        let res = repo.d03_insert(t.offset, t.text.as_ref());
+        match res {
             Ok(_id) => i += 1,
             Err(AppError { err_type, message }) => {
                 println!("{:?}: {}", err_type, message);
