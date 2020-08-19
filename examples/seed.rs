@@ -42,6 +42,31 @@ pub struct TimeZone {
     pub offset: f32,
     pub utc: Vec<String>,
 }
+#[derive(Debug, Clone)]
+pub struct TempD04D02 {
+    pub id: String,
+    pub name: String,
+    pub d03: Vec<TempD04D03>,
+}
+
+#[derive(Debug, Clone)]
+pub struct TempD04D03 {
+    pub id: String,
+    pub text: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct TempD05D01 {
+    pub id: String,
+    pub name: String,
+    pub d02: Vec<TempD05D02>,
+}
+
+#[derive(Debug, Clone)]
+pub struct TempD05D02 {
+    pub id: String,
+    pub name: String,
+}
 
 impl Citys {
     fn new(path: &str) -> Citys {
@@ -83,11 +108,20 @@ fn main() {
     let citys = Citys::new(PATH);
     let time_zones = TimeZones::new(PATH_TZ);
     let repo = Repo::new();
+    // d01
+    let mut temp_d05: Vec<TempD05D01> = Vec::new();
     for c in &citys.city {
         let res =
             repo.d01_insert(c.country.as_ref(), c.name.as_ref(), c.lat, c.lng);
         match res {
-            Ok(_id) => i += 1,
+            Ok(id) => {
+                temp_d05.push(TempD05D01 {
+                    id: id,
+                    name: c.name.clone(),
+                    d02: Vec::new(),
+                });
+                i += 1;
+            }
             Err(AppError { err_type, message }) => match err_type {
                 _ => {
                     panic!("{:?} {:?}", err_type, message);
@@ -96,12 +130,21 @@ fn main() {
         }
     }
     println!("d01 -> {} record(s) insert", i);
+    // d02
     i = 0;
+    let mut temp_d04: Vec<TempD04D02> = Vec::new();
     for c in citys.city {
         for t in c.time_zone_name {
             let res = repo.d02_insert(t.as_ref());
             match res {
-                Ok(_id) => i += 1,
+                Ok(id) => {
+                    temp_d04.push(TempD04D02 {
+                        id: id,
+                        name: t,
+                        d03: Vec::new(),
+                    });
+                    i += 1;
+                }
                 Err(AppError { err_type, message }) => match err_type {
                     ErrorType::UniqueViolation => {}
                     _ => {
@@ -112,11 +155,52 @@ fn main() {
         }
     }
     println!("d02 -> {} record(s) insert", i);
+    // d03
     i = 0;
     for t in time_zones.time_zone {
         let res = repo.d03_insert(t.offset, t.text.as_ref());
         match res {
-            Ok(_id) => i += 1,
+            Ok(id) => {
+                for utc in t.utc {
+                    let clone_d04: Vec<TempD04D02> = temp_d04.clone();
+                    temp_d04 = Vec::new();
+                    for c in clone_d04 {
+                        if utc == c.name {
+                            let mut temp_d03 = Vec::new();
+                            for c_d03 in c.d03 {
+                                temp_d03.push(TempD04D03 {
+                                    id: c_d03.id,
+                                    text: c_d03.text,
+                                });
+                            }
+                            // Add
+                            temp_d03.push(TempD04D03 {
+                                id: id.clone(),
+                                text: t.text.clone(),
+                            });
+                            temp_d04.push(TempD04D02 {
+                                id: c.id,
+                                name: c.name,
+                                d03: temp_d03,
+                            });
+                        } else {
+                            let mut temp_d03 = Vec::new();
+                            for c_d03 in c.d03 {
+                                temp_d03.push(TempD04D03 {
+                                    id: c_d03.id,
+                                    text: c_d03.text,
+                                });
+                            }
+                            temp_d04.push(TempD04D02 {
+                                id: c.id,
+                                name: c.name,
+                                d03: temp_d03,
+                            });
+                        }
+                    }
+                }
+                i += 1;
+            }
             Err(AppError { err_type, message }) => {
                 println!("{:?}: {}", err_type, message);
                 panic!(t.text)
@@ -124,12 +208,25 @@ fn main() {
         }
     }
     println!("d03 -> {} record(s) insert", i);
+    println!("{:?}", temp_d04);
+    // d04
+    i = 0;
 }
 /*
  * pub enum ErrorType {
     Internal,
     NotFound,
     UniqueViolation,
+}
+pub struct TempD02TimeZoneUtc {
+    pub id: String,
+    pub name: String,
+    pub d03: Vec<TempD03TimeZoneInfo>,
+}
+
+pub struct TempD03TimeZoneInfo {
+    pub id: String,
+    pub text: String,
 }
 
 */
