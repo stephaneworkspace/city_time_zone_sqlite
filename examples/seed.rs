@@ -91,11 +91,12 @@ fn main() {
     println!("d01 -> {} record(s) insert", i);
     i = 0;
     for t in time_zones.time_zone {
-        let record_d03_id = repo.d03_insert(t.offset, &t.text.as_ref());
+        let record_d03_id = repo.d03_insert(t.offset, t.text.as_ref());
         match record_d03_id {
             Ok(_id) => i += 1,
             Err(AppError { err_type, message }) => {
-                println!("{:?}: {}", err_type, message)
+                println!("{:?}: {}", err_type, message);
+                panic!(t.text)
             } /*
               err => match err {
                   UniqueViolation => {
