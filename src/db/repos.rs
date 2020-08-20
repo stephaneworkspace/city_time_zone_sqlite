@@ -11,6 +11,7 @@ use super::schema::d02_time_zone_utc;
 use super::schema::d02_time_zone_utc::dsl::*;
 use super::schema::d03_time_zone_info;
 use super::schema::d04_link_d02_d03;
+use super::schema::d04_link_d02_d03::dsl::*;
 use super::schema::d05_link_d01_d02;
 use super::schema::d05_link_d01_d02::dsl::*;
 use uuid::Uuid;
@@ -44,16 +45,16 @@ pub trait TraitRepoD03 {
 pub trait TraitRepoD04 {
     fn d04_insert(
         &self,
-        d02_time_zone_utc_id: &str,
-        d03_time_zone_info_id: &str,
+        d04_d02_time_zone_utc_id: &str,
+        d04_d03_time_zone_info_id: &str,
     ) -> Result<(), AppError>;
 }
 
 pub trait TraitRepoD05 {
     fn d05_insert(
         &self,
-        d01_citys_id: &str,
-        d02_time_zone_utc_id: &str,
+        d05_d01_citys_id: &str,
+        d05_d02_time_zone_utc_id: &str,
     ) -> Result<(), AppError>;
 }
 
@@ -78,11 +79,11 @@ impl TraitRepoD01 for Repo {
             let uuid = Uuid::new_v4().to_hyphenated().to_string();
 
             let new_d01 = InsertD01 {
-                id: &uuid,
-                country: i_country,
-                name: i_name,
-                lat: i_lat,
-                lng: i_lng,
+                d01_id: &uuid,
+                d01_country: i_country,
+                d01_name: i_name,
+                d01_lat: i_lat,
+                d01_lng: i_lng,
             };
 
             let insert = diesel::insert_into(d01_citys::table)
@@ -117,9 +118,10 @@ impl TraitRepoD01 for Repo {
     fn d01_select_all(&self) -> Vec<D01Citys> {
         let d05_recs = d01_citys
             .inner_join(d05_link_d01_d02)
-            .filter(country.eq("CH"))
+            // .inner_join(d04_link_d02_d03)
+            .filter(d01_country.eq("CH"))
             //.limit(5)
-            .select((d01_citys_id, d02_time_zone_utc_id))
+            .select((d05_d01_citys_id, d05_d02_time_zone_utc_id))
             .load::<(String, String)>(&self.connection)
             .expect("Error query d01_city");
         let mut dto_recs: Vec<DtoCitys> = Vec::new();
@@ -181,8 +183,8 @@ impl TraitRepoD02 for Repo {
         let uuid = Uuid::new_v4().to_hyphenated().to_string();
 
         let new_d02 = InsertD02 {
-            id: &uuid,
-            name: i_name,
+            d02_id: &uuid,
+            d02_name: i_name,
         };
 
         let insert = diesel::insert_into(d02_time_zone_utc::table)
@@ -208,9 +210,9 @@ impl TraitRepoD03 for Repo {
         let uuid = Uuid::new_v4().to_hyphenated().to_string();
 
         let new_d03 = InsertD03 {
-            id: &uuid,
-            offset: i_offset,
-            text: i_text,
+            d03_id: &uuid,
+            d03_offset: i_offset,
+            d03_text: i_text,
         };
 
         let insert = diesel::insert_into(d03_time_zone_info::table)
@@ -237,8 +239,8 @@ impl TraitRepoD04 for Repo {
         i_d03_time_zone_info_id: &str,
     ) -> Result<(), AppError> {
         let new_d04 = InsertD04 {
-            d02_time_zone_utc_id: i_d02_time_zone_utc_id,
-            d03_time_zone_info_id: i_d03_time_zone_info_id,
+            d04_d02_time_zone_utc_id: i_d02_time_zone_utc_id,
+            d04_d03_time_zone_info_id: i_d03_time_zone_info_id,
         };
 
         let insert = diesel::insert_into(d04_link_d02_d03::table)
@@ -262,8 +264,8 @@ impl TraitRepoD05 for Repo {
         i_d02_time_zone_utc_id: &str,
     ) -> Result<(), AppError> {
         let new_d05 = InsertD05 {
-            d01_citys_id: i_d01_citys_id,
-            d02_time_zone_utc_id: i_d02_time_zone_utc_id,
+            d05_d01_citys_id: i_d01_citys_id,
+            d05_d02_time_zone_utc_id: i_d02_time_zone_utc_id,
         };
 
         let insert = diesel::insert_into(d05_link_d01_d02::table)
