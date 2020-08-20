@@ -10,6 +10,7 @@ use super::schema::d01_citys::dsl::*;
 use super::schema::d02_time_zone_utc;
 use super::schema::d02_time_zone_utc::dsl::*;
 use super::schema::d03_time_zone_info;
+use super::schema::d03_time_zone_info::dsl::*;
 use super::schema::d04_link_d02_d03;
 use super::schema::d04_link_d02_d03::dsl::*;
 use super::schema::d05_link_d01_d02;
@@ -30,8 +31,7 @@ pub trait TraitRepoD01 {
         lat: f32,
         lng: f32,
     ) -> Result<String, AppError>;
-    fn d01_select_by_name(&self, name: &str) -> Vec<D01Citys>;
-    fn d01_select_all(&self) -> Vec<D01Citys>;
+    fn d01_search(&self, search: &str) -> Vec<DtoCitys>;
 }
 
 pub trait TraitRepoD02 {
@@ -102,28 +102,41 @@ impl TraitRepoD01 for Repo {
         }
     }
 
-    fn d01_select_by_name(&self, _s_name: &str) -> Vec<D01Citys> {
-        Vec::new()
-        /*d01_citys
-        .filter(name.eq(s_name))
-        //.limit(5)
-        .load::<D01Citys>(&self.connection)
-        .expect("Error query d01_city")*/
-    }
-
+    /// Search
+    ///
     /// let d05_recs special because :
     ///
     /// https://docs.diesel.rs/diesel/associations/index.html
-    /// Associations in Diesel are always child-to-parent. You can declare an association between two records with #[belongs_to]. Unlike other ORMs, Diesel has no concept of #[has_many]
-    fn d01_select_all(&self) -> Vec<D01Citys> {
-        let d05_recs = d01_citys
-            .inner_join(d05_link_d01_d02)
-            // .inner_join(d04_link_d02_d03)
-            .filter(d01_country.eq("CH"))
-            //.limit(5)
-            .select((d05_d01_citys_id, d05_d02_time_zone_utc_id))
-            .load::<(String, String)>(&self.connection)
-            .expect("Error query d01_city");
+    ///
+    /// Associations in Diesel are always child-to-parent.
+    /// You can declare an association between two records with #[belongs_to].
+    /// Unlike other ORMs, Diesel has no concept of #[has_many]
+    ///                                               --------
+    /// Other technics for join belonging_to resut
+    ///
+    /// let d01_rec = d01_citys
+    ///     .limit(5)
+    ///     .load::<D01Citys>(&self.connection)
+    ///     .expect("Error query d01_city");
+    /// let d05_rec = D05LinkD01D02::belonging_to(&d01_rec)
+    ///     .load::<D05LinkD01D02>(&self.connection)
+    ///     .expect("Error query d01_city -> d05_link_d01_d02")
+    ///     .grouped_by(&d01_rec);
+    /// let res = d01_rec.clone().into_iter().zip(d05_rec).collect::<Vec<_>>();
+    fn d01_search(&self, search: &str) -> Vec<DtoCitys> {
+        let d05_recs = if search == "" {
+            Vec::new()
+        } else {
+            d01_citys
+                .inner_join(d05_link_d01_d02)
+                // .inner_join(d04_link_d02_d03) // don't work now in this version
+                //                               // of diesel
+                .filter(d01_name.eq(search))
+                //.limit(5)
+                .select((d05_d01_citys_id, d05_d02_time_zone_utc_id))
+                .load::<(String, String)>(&self.connection)
+                .expect("Error query d01_city")
+        };
         let mut dto_recs: Vec<DtoCitys> = Vec::new();
         for rec in &d05_recs {
             let d01_rec = d01_citys
@@ -134,48 +147,28 @@ impl TraitRepoD01 for Repo {
                 .find(&rec.1)
                 .first::<D02TimeZoneUtc>(&self.connection)
                 .expect("Error query find d02_time_zone_utc");
+            let d04_recs = d04_link_d02_d03
+                .filter(d04_d02_time_zone_utc_id.eq(&d02_rec.d02_id))
+                .select(d04_d03_time_zone_info_id)
+                .load::<String>(&self.connection)
+                .expect("Error query filter d03_time_zone_info");
+            let mut d03_recs: Vec<D03TimeZoneInfo> = Vec::new();
+            for d04_rec in d04_recs {
+                let d03_rec = d03_time_zone_info
+                    .find(&d04_rec)
+                    .first::<D03TimeZoneInfo>(&self.connection)
+                    .expect("Error query find d03_time_zone_info");
+                d03_recs.push(d03_rec);
+            }
             let dto_rec = DtoCitys {
                 d01_rec: d01_rec,
                 d02_rec: d02_rec,
+                d03_recs: d03_recs,
             };
             dto_recs.push(dto_rec);
-            //let result =
-            //let res = d01_rec.clone().into_iter().zip(d05_rec).collect::<Vec<_>>();
         }
-        /*
-        let d01_rec = d01_citys
-            .limit(5)
-            .load::<D01Citys>(&self.connection)
-            .expect("Error query d01_city");
-        */
-        /*let d05_rec = D05LinkD01D02::belonging_to(&d01_rec)
-            .load::<D05LinkD01D02>(&self.connection)
-            .expect("Error query d01_city -> d05_link_d01_d02")
-            .grouped_by(&d01_rec);
-        */
-
-        /*let d02_key = D05LinkD01D02::belonging_to(&d01_rec)
-        .select(d02_time_zone_utc_id)
-        .load::<String>(&self.connection);*/
-        /*
-        let versions = Version::belonging_to(krate)
-          .select(id)
-          .order(num.desc())
-          .limit(5);
-        let downloads = version_downloads
-          .filter(date.gt(now - 90.days()))
-          .filter(version_id.eq(any(versions)))
-          .order(date)
-          .load::<Download>(&conn)?;
-        */
-        //let d02_rec = D02TimeZoneUtc::belonging_to(&da
-
-        //let res = d01_rec.clone().into_iter().zip(d05_rec).collect::<Vec<_>>();
-        println!("{:?}", dto_recs);
-
-        Vec::new()
-        //d01_rec
-    } // d05_link_d01_d02:
+        dto_recs
+    }
 }
 
 impl TraitRepoD02 for Repo {

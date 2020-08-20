@@ -9,8 +9,9 @@ use city_time_zone_sqlite::{/*AppError,*/ Repo, TraitRepoD01};
 
 fn main() {
     let repo = Repo::new();
-    let _res = repo.d01_select_all();
-    /*for r in res {
-        println!("{:?}", r);
-    }*/
+    let res = repo.d01_search("Genève");
+    println!("OK");
+    for r in res {
+        println!("{:?}\n", r);
+    }
 }
