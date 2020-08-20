@@ -1,3 +1,4 @@
+///#![feature(in_band_lifetimes)]
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
@@ -5,14 +6,14 @@ extern crate serde_json;
 
 // use serde::Deserialize;
 // use serde::Serialize;
+use city_time_zone_sqlite::{
+    AppError, Repo, TraitRepoD01, TraitRepoD02, TraitRepoD03, TraitRepoD04,
+    TraitRepoD05,
+};
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::panic;
-
-use city_time_zone_sqlite::{
-    AppError, ErrorType, Repo, TraitRepoD01, TraitRepoD02, TraitRepoD03,
-    TraitRepoD04, TraitRepoD05,
-};
 
 const PATH: &str = "assets/citys.json";
 const PATH_TZ: &str = "assets/tz_utc.json";
@@ -31,12 +32,12 @@ pub struct City {
     pub time_zone_name: Vec<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TimeZones {
     pub time_zone: Vec<TimeZone>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct TimeZone {
     pub text: String,
     pub offset: f32,
@@ -55,17 +56,36 @@ pub struct TempD04D03 {
     pub text: String,
 }
 
-#[derive(Debug, Clone)]
-pub struct TempD05D01 {
-    pub id: String,
-    pub name: String,
+#[derive(Debug, PartialEq, Clone)]
+pub struct TempD05 {
     pub d02: Vec<TempD05D02>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct TempD05D02 {
-    pub id: String,
+    pub id: String, // d02_id
     pub name: String,
+    pub d01: Vec<TempD05D01>,
+}
+
+#[derive(Debug, PartialEq, Clone, Eq, Hash)]
+pub struct TempD05D01 {
+    pub id: String,   // d01_id
+    pub name: String, // d01 name
+}
+
+#[derive(Debug, PartialEq, Clone, Eq, Hash)]
+pub struct TempIndexD05D02 {
+    pub id_d01: String, // d01_id
+    pub name: String,   // d02 name
+}
+
+struct HashMapD05 {
+    map: HashMap<TempIndexD05D02, TempD05D01>,
+}
+
+trait TraitHashMapD05 {
+    fn add(&mut self, id_d02: TempIndexD05D02, rec_d01: TempD05D01);
 }
 
 impl Citys {
@@ -100,6 +120,25 @@ impl TimeZones {
     }
 }
 
+impl TempD05 {
+    fn filter_time_zone_d02_name(
+        &self,
+        time_zone_d02_name: String,
+    ) -> Vec<TempD05D02> {
+        self.d02
+            .iter()
+            .filter(|&x| x.name == time_zone_d02_name)
+            .cloned()
+            .collect::<Vec<TempD05D02>>()
+    }
+}
+
+impl TraitHashMapD05 for HashMapD05 {
+    fn add(&mut self, d02: TempIndexD05D02, rec_d01: TempD05D01) {
+        self.map.insert(d02, rec_d01);
+    }
+}
+
 fn main() {
     println!("Seed database");
     // If this project is bigger, i need to put this code in one controller
@@ -107,19 +146,28 @@ fn main() {
     let mut i: u32 = 0;
     let citys = Citys::new(PATH);
     let time_zones = TimeZones::new(PATH_TZ);
+    let mut temp_hash: HashMapD05 = HashMapD05 {
+        map: HashMap::new(),
+    };
     let repo = Repo::new();
     // d01
-    let mut temp_d05: Vec<TempD05D01> = Vec::new();
-    for c in &citys.city {
+    for c in citys.city.clone() {
         let res =
             repo.d01_insert(c.country.as_ref(), c.name.as_ref(), c.lat, c.lng);
         match res {
             Ok(id) => {
-                temp_d05.push(TempD05D01 {
-                    id: id,
-                    name: c.name.clone(),
-                    d02: Vec::new(),
-                });
+                for t in c.time_zone_name.clone() {
+                    temp_hash.add(
+                        TempIndexD05D02 {
+                            id_d01: id.clone(),
+                            name: t.clone(),
+                        },
+                        TempD05D01 {
+                            id: id.clone(),
+                            name: c.name.clone(),
+                        },
+                    );
+                }
                 i += 1;
             }
             Err(AppError { err_type, message }) => match err_type {
@@ -133,68 +181,69 @@ fn main() {
     // d02
     i = 0;
     let mut temp_d04: Vec<TempD04D02> = Vec::new();
-    for city in citys.city {
-        for t in city.time_zone_name {
-            let res = repo.d02_insert(t.clone().as_ref());
-            match res {
-                Ok(id) => {
-                    temp_d04.push(TempD04D02 {
-                        id: id.clone(),
-                        name: t.clone(),
-                        d03: Vec::new(),
-                    });
-                    let clone_d05: Vec<TempD05D01> = temp_d05.clone();
-                    temp_d05 = Vec::new();
-                    i += 1;
-                    for c in clone_d05 {
-                        if c.name == city.name {
-                            let mut temp_d02 = Vec::new();
-                            for c_d02 in c.d02 {
-                                temp_d02.push(TempD05D02 {
-                                    id: c_d02.id,
-                                    name: c_d02.name,
-                                });
-                            }
-                            // Add
-                            temp_d02.push(TempD05D02 {
-                                id: id.clone(),
-                                name: t.clone(),
-                            });
-                            temp_d05.push(TempD05D01 {
-                                id: c.id,
-                                name: c.name,
-                                d02: temp_d02,
-                            });
-                        } else {
-                            let mut temp_d02 = Vec::new();
-                            for c_d02 in c.d02 {
-                                temp_d02.push(TempD05D02 {
-                                    id: c_d02.id,
-                                    name: c_d02.name,
-                                });
-                            }
-                            temp_d05.push(TempD05D01 {
-                                id: c.id,
-                                name: c.name,
-                                d02: temp_d02,
-                            });
-                        }
+    let mut temp_d05: TempD05 = { TempD05 { d02: Vec::new() } };
+    for city in citys.city.clone() {
+        for t in city.time_zone_name.clone() {
+            let temp =
+                temp_d05.filter_time_zone_d02_name(t.clone().to_string());
+            if temp.len() > 0 {
+            } else {
+                let res = repo.d02_insert(t.as_ref());
+                match res {
+                    Ok(id) => {
+                        let rec_d04d02 = TempD04D02 {
+                            id: id.clone(),
+                            name: t.clone().to_string(),
+                            d03: Vec::new(),
+                        };
+                        temp_d04.push(rec_d04d02);
+                        i += 1;
+                        let rec_d05d02 = TempD05D02 {
+                            id: id.clone(),
+                            name: t.clone().to_string(),
+                            d01: Vec::new(),
+                        };
+                        temp_d05.d02.push(rec_d05d02);
+                    }
+                    Err(AppError { err_type, message }) => {
+                        panic!("{:?} {:?}", err_type, message)
                     }
                 }
-                Err(AppError { err_type, message }) => match err_type {
-                    ErrorType::UniqueViolation => {}
-                    _ => {
-                        panic!("{:?} {:?}", err_type, message);
-                    }
-                },
             }
         }
     }
+    let clone_d05: TempD05 = temp_d05.clone();
+    temp_d05 = TempD05 { d02: Vec::new() };
+    for c in clone_d05.d02 {
+        let mut temp_d01 = Vec::new();
+        let key = TempIndexD05D02 {
+            id_d01: "".to_string(),
+            name: c.name.clone(),
+        };
+        /*match temp_hash.map.get(&key) {
+            Some(d01) => {
+                temp_d01.push(TempD05D01 {
+                    id: d01.id.to_string(),
+                    name: d01.name.to_string(),
+                });
+            }
+            _ => println!("missing"),
+        }*/
+        for (d02, d01) in &temp_hash.map {
+            if &d02.name == &key.name {
+                temp_d01.push(TempD05D01 {
+                    id: d01.id.to_string(),
+                    name: d01.name.to_string(),
+                });
+            }
+        }
+        temp_d05.d02.push(TempD05D02 {
+            id: c.id,
+            name: c.name.clone(),
+            d01: temp_d01.clone(),
+        });
+    }
     println!("d02 -> {} record(s) insert", i);
-    /*for t in &temp_d05 {
-        println!("{}", t.d02.len());
-    }*/
-    //println!("{:?}", temp_d05);
     // d03
     i = 0;
     for t in time_zones.time_zone {
@@ -248,7 +297,6 @@ fn main() {
         }
     }
     println!("d03 -> {} record(s) insert", i);
-    // println!("{:?}", temp_d04);
     // d04
     i = 0;
     for t_d04 in temp_d04 {
@@ -270,13 +318,12 @@ fn main() {
     println!("d04 -> {} record(s) insert", i);
     // d05
     i = 0;
-    for t_d05 in temp_d05 {
-        //t_d05 = d01
-        for t_d02 in t_d05.d02 {
-            let res = repo.d05_insert(t_d05.id.as_ref(), t_d02.id.as_ref());
+    for t_d02 in temp_d05.d02 {
+        //t_d05 = d02
+        for t_d01 in t_d02.d01 {
+            let res = repo.d05_insert(t_d01.id.as_ref(), t_d02.id.as_ref());
             match res {
                 Ok(()) => {
-                    println!("{}", t_d05.name);
                     i += 1;
                 }
                 Err(AppError { err_type, message }) => match err_type {
@@ -289,21 +336,3 @@ fn main() {
     }
     println!("d05 -> {} record(s) insert", i);
 }
-/*
- * pub enum ErrorType {
-    Internal,
-    NotFound,
-    UniqueViolation,
-}
-pub struct TempD02TimeZoneUtc {
-    pub id: String,
-    pub name: String,
-    pub d03: Vec<TempD03TimeZoneInfo>,
-}
-
-pub struct TempD03TimeZoneInfo {
-    pub id: String,
-    pub text: String,
-}
-
-*/

@@ -26,7 +26,8 @@ pub trait TraitRepoD01 {
         lat: f32,
         lng: f32,
     ) -> Result<String, AppError>;
-    fn d01_read_all(&self) -> Vec<D01Citys>;
+    fn d01_select_by_name(&self, name: &str) -> Vec<D01Citys>;
+    fn d01_select_all(&self) -> Vec<D01Citys>;
 }
 
 pub trait TraitRepoD02 {
@@ -97,7 +98,16 @@ impl TraitRepoD01 for Repo {
         }
     }
 
-    fn d01_read_all(&self) -> Vec<D01Citys> {
+    fn d01_select_by_name(&self, s_name: &str) -> Vec<D01Citys> {
+        let connection = establish_connection();
+        d01_citys
+            .filter(name.eq(s_name))
+            //.limit(5)
+            .load::<D01Citys>(&connection)
+            .expect("Error query d01_city")
+    }
+
+    fn d01_select_all(&self) -> Vec<D01Citys> {
         let connection = establish_connection();
         d01_citys
             //.filter(country.eq("Switzerland"))

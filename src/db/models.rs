@@ -25,7 +25,7 @@ pub struct InsertD01<'a> {
 #[derive(Serialize, Queryable)]
 pub struct D02TimeZoneUtc {
     pub id: String,
-    pub name: String,
+    pub name: String, // Ex: "Europe/Zurich"
 }
 
 #[derive(Insertable)]
@@ -39,7 +39,7 @@ pub struct InsertD02<'a> {
 pub struct D03TimeZoneInfo {
     pub id: String,
     pub offset: f32,
-    pub text: String,
+    pub text: String, // Ex: "(UTC+01:00) Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna"
 }
 
 #[derive(Insertable)]
