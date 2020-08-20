@@ -10,6 +10,7 @@ use super::schema::d02_time_zone_utc;
 use super::schema::d03_time_zone_info;
 use super::schema::d04_link_d02_d03;
 use super::schema::d05_link_d01_d02;
+use super::schema::d05_link_d01_d02::dsl::*;
 use uuid::Uuid;
 
 const MAX_SQL_INSERT_UNIQUE: usize = 15;
@@ -99,22 +100,59 @@ impl TraitRepoD01 for Repo {
     }
 
     fn d01_select_by_name(&self, s_name: &str) -> Vec<D01Citys> {
-        let connection = establish_connection();
         d01_citys
             .filter(name.eq(s_name))
             //.limit(5)
-            .load::<D01Citys>(&connection)
+            .load::<D01Citys>(&self.connection)
             .expect("Error query d01_city")
     }
 
+    /// let d05_recs special because :
+    ///
+    /// https://docs.diesel.rs/diesel/associations/index.html
+    /// Associations in Diesel are always child-to-parent. You can declare an association between two records with #[belongs_to]. Unlike other ORMs, Diesel has no concept of #[has_many]
     fn d01_select_all(&self) -> Vec<D01Citys> {
-        let connection = establish_connection();
-        d01_citys
+        let d05_recs = d01_citys
+            .inner_join(d05_link_d01_d02)
             //.filter(country.eq("Switzerland"))
-            //.limit(5)
-            .load::<D01Citys>(&connection)
-            .expect("Error query d01_city")
-    }
+            .limit(5)
+            .select((d01_citys_id, d02_time_zone_utc_id))
+            .load::<(String, String)>(&self.connection)
+            .expect("Error query d01_city");
+        /*
+        let d01_rec = d01_citys
+            .limit(5)
+            .load::<D01Citys>(&self.connection)
+            .expect("Error query d01_city");
+        */
+        /*let d05_rec = D05LinkD01D02::belonging_to(&d01_rec)
+            .load::<D05LinkD01D02>(&self.connection)
+            .expect("Error query d01_city -> d05_link_d01_d02")
+            .grouped_by(&d01_rec);
+        */
+
+        /*let d02_key = D05LinkD01D02::belonging_to(&d01_rec)
+        .select(d02_time_zone_utc_id)
+        .load::<String>(&self.connection);*/
+        /*
+        let versions = Version::belonging_to(krate)
+          .select(id)
+          .order(num.desc())
+          .limit(5);
+        let downloads = version_downloads
+          .filter(date.gt(now - 90.days()))
+          .filter(version_id.eq(any(versions)))
+          .order(date)
+          .load::<Download>(&conn)?;
+        */
+        //let d02_rec = D02TimeZoneUtc::belonging_to(&da
+
+        //let res = d01_rec.clone().into_iter().zip(d05_rec).collect::<Vec<_>>();
+        println!("{:?}", d05_recs);
+
+        Vec::new()
+        //d01_rec
+    } // d05_link_d01_d02:
 }
 
 impl TraitRepoD02 for Repo {

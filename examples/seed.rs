@@ -1,4 +1,3 @@
-///#![feature(in_band_lifetimes)]
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
