@@ -151,9 +151,9 @@ fn main() {
     let repo = Repo::new();
     // d01
     for c in citys.city.clone() {
-        let res =
+        let status =
             repo.d01_insert(c.country.as_ref(), c.name.as_ref(), c.lat, c.lng);
-        match res {
+        match status {
             Ok(id) => {
                 for t in c.time_zone_name.clone() {
                     temp_hash.add(
@@ -187,8 +187,8 @@ fn main() {
                 temp_d05.filter_time_zone_d02_name(t.clone().to_string());
             if temp.len() > 0 {
             } else {
-                let res = repo.d02_insert(t.as_ref());
-                match res {
+                let status = repo.d02_insert(t.as_ref());
+                match status {
                     Ok(id) => {
                         let rec_d04d02 = TempD04D02 {
                             id: id.clone(),
@@ -246,8 +246,8 @@ fn main() {
     // d03
     i = 0;
     for t in time_zones.time_zone {
-        let res = repo.d03_insert(t.offset, t.text.as_ref());
-        match res {
+        let status = repo.d03_insert(t.offset, t.text.as_ref());
+        match status {
             Ok(id) => {
                 for utc in t.utc {
                     let clone_d04: Vec<TempD04D02> = temp_d04.clone();
@@ -301,8 +301,8 @@ fn main() {
     for t_d04 in temp_d04 {
         //t_d04 = d02
         for t_d03 in t_d04.d03 {
-            let res = repo.d04_insert(t_d04.id.as_ref(), t_d03.id.as_ref());
-            match res {
+            let status = repo.d04_insert(t_d04.id.as_ref(), t_d03.id.as_ref());
+            match status {
                 Ok(()) => {
                     i += 1;
                 }
@@ -320,8 +320,8 @@ fn main() {
     for t_d02 in temp_d05.d02 {
         //t_d05 = d02
         for t_d01 in t_d02.d01 {
-            let res = repo.d05_insert(t_d01.id.as_ref(), t_d02.id.as_ref());
-            match res {
+            let status = repo.d05_insert(t_d01.id.as_ref(), t_d02.id.as_ref());
+            match status {
                 Ok(()) => {
                     i += 1;
                 }
