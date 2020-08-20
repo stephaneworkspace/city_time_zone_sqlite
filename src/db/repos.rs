@@ -2,11 +2,13 @@ use diesel::prelude::*;
 use dotenv::dotenv;
 use std::env;
 
+use super::dto::DtoCitys;
 use super::errors::{AppError, ErrorType};
 use super::models::*;
 use super::schema::d01_citys;
 use super::schema::d01_citys::dsl::*;
 use super::schema::d02_time_zone_utc;
+use super::schema::d02_time_zone_utc::dsl::*;
 use super::schema::d03_time_zone_info;
 use super::schema::d04_link_d02_d03;
 use super::schema::d05_link_d01_d02;
@@ -99,12 +101,13 @@ impl TraitRepoD01 for Repo {
         }
     }
 
-    fn d01_select_by_name(&self, s_name: &str) -> Vec<D01Citys> {
-        d01_citys
-            .filter(name.eq(s_name))
-            //.limit(5)
-            .load::<D01Citys>(&self.connection)
-            .expect("Error query d01_city")
+    fn d01_select_by_name(&self, _s_name: &str) -> Vec<D01Citys> {
+        Vec::new()
+        /*d01_citys
+        .filter(name.eq(s_name))
+        //.limit(5)
+        .load::<D01Citys>(&self.connection)
+        .expect("Error query d01_city")*/
     }
 
     /// let d05_recs special because :
@@ -114,11 +117,29 @@ impl TraitRepoD01 for Repo {
     fn d01_select_all(&self) -> Vec<D01Citys> {
         let d05_recs = d01_citys
             .inner_join(d05_link_d01_d02)
-            //.filter(country.eq("Switzerland"))
-            .limit(5)
+            .filter(country.eq("CH"))
+            //.limit(5)
             .select((d01_citys_id, d02_time_zone_utc_id))
             .load::<(String, String)>(&self.connection)
             .expect("Error query d01_city");
+        let mut dto_recs: Vec<DtoCitys> = Vec::new();
+        for rec in &d05_recs {
+            let d01_rec = d01_citys
+                .find(&rec.0)
+                .first::<D01Citys>(&self.connection)
+                .expect("Error query find d01_city");
+            let d02_rec = d02_time_zone_utc
+                .find(&rec.1)
+                .first::<D02TimeZoneUtc>(&self.connection)
+                .expect("Error query find d02_time_zone_utc");
+            let dto_rec = DtoCitys {
+                d01_rec: d01_rec,
+                d02_rec: d02_rec,
+            };
+            dto_recs.push(dto_rec);
+            //let result =
+            //let res = d01_rec.clone().into_iter().zip(d05_rec).collect::<Vec<_>>();
+        }
         /*
         let d01_rec = d01_citys
             .limit(5)
@@ -148,7 +169,7 @@ impl TraitRepoD01 for Repo {
         //let d02_rec = D02TimeZoneUtc::belonging_to(&da
 
         //let res = d01_rec.clone().into_iter().zip(d05_rec).collect::<Vec<_>>();
-        println!("{:?}", d05_recs);
+        println!("{:?}", dto_recs);
 
         Vec::new()
         //d01_rec
