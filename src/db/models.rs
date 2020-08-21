@@ -10,6 +10,7 @@ pub struct D01Citys {
     pub d01_id: String,
     pub d01_country: String,
     pub d01_name: String,
+    pub d01_name_search: String,
     pub d01_lat: f32,
     pub d01_lng: f32,
 }
@@ -20,6 +21,7 @@ pub struct InsertD01<'a> {
     pub d01_id: &'a str,
     pub d01_country: &'a str,
     pub d01_name: &'a str,
+    pub d01_name_search: &'a str,
     pub d01_lat: f32,
     pub d01_lng: f32,
 }

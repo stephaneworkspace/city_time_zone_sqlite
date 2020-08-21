@@ -3,6 +3,7 @@ table! {
         d01_id -> Text,
         d01_country -> Text,
         d01_name -> Text,
+        d01_name_search -> Text,
         d01_lat -> Float,
         d01_lng -> Float,
     }

@@ -1,7 +1,3 @@
-use diesel::prelude::*;
-use dotenv::dotenv;
-use std::env;
-
 use super::dto::DtoCitys;
 use super::errors::{AppError, ErrorType};
 use super::models::*;
@@ -15,6 +11,10 @@ use super::schema::d04_link_d02_d03;
 use super::schema::d04_link_d02_d03::dsl::*;
 use super::schema::d05_link_d01_d02;
 use super::schema::d05_link_d01_d02::dsl::*;
+use diesel::prelude::*;
+use dotenv::dotenv;
+use std::env;
+use unidecode::unidecode;
 use uuid::Uuid;
 
 const MAX_SQL_INSERT_UNIQUE: usize = 15;
@@ -80,6 +80,7 @@ impl TraitRepoD01 for Repo {
         lat: f32,
         lng: f32,
     ) -> Result<String, AppError> {
+        let name_search = unidecode(&name);
         let mut i: usize = 0;
         loop {
             let uuid = Uuid::new_v4().to_hyphenated().to_string();
@@ -88,6 +89,7 @@ impl TraitRepoD01 for Repo {
                 d01_id: &uuid,
                 d01_country: country,
                 d01_name: name,
+                d01_name_search: &name_search,
                 d01_lat: lat,
                 d01_lng: lng,
             };
@@ -144,8 +146,8 @@ impl TraitRepoD01 for Repo {
                 .inner_join(d05_link_d01_d02)
                 // .inner_join(d04_link_d02_d03) // don't work now in this
                 //                               // version of diesel
-                //.filter(d01_name.like(format!("%{}%", search)).collate())
-                .filter(d01_name.eq(search).collate())
+                .filter(d01_name_search.like(format!("%{}%", search))) // collate only work on eq
+                //.filter(d01_name.eq(search).collate())
                 //.limit(5)
                 .select((d05_d01_citys_id, d05_d02_time_zone_utc_id))
                 .load::<(String, String)>(&self.connection)
