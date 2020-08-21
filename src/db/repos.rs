@@ -137,7 +137,7 @@ impl TraitRepoD01 for Repo {
                 .inner_join(d05_link_d01_d02)
                 // .inner_join(d04_link_d02_d03) // don't work now in this i
                 //                               // version of diesel
-                .filter(d01_name.eq(search))
+                .filter(d01_name.like(search))
                 //.limit(5)
                 .select((d05_d01_citys_id, d05_d02_time_zone_utc_id))
                 .load::<(String, String)>(&self.connection)
