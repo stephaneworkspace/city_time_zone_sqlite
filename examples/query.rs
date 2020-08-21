@@ -5,13 +5,26 @@ extern crate serde_json;
 */
 // use serde::Deserialize;
 // use serde::Serialize;
-use city_time_zone_sqlite::{/*AppError,*/ Repo, TraitRepoD01};
+use city_time_zone_sqlite::{AppError, Repo, TraitRepoD01, TraitRepoUtils};
+use std::panic;
 
 fn main() {
-    let repo = Repo::new();
-    let res = repo.d01_search("Genève");
+    let status = Repo::connect();
+    let repo = match status {
+        Ok(res) => res,
+        Err(AppError { err_type, message }) => {
+            panic!("{:?} {}", err_type, message)
+        }
+    };
+    let status = repo.d01_search("Genève");
+    let recs = match status {
+        Ok(res) => res,
+        Err(AppError { err_type, message }) => {
+            panic!("{:?} {}", err_type, message)
+        }
+    };
     println!("OK");
-    for r in res {
+    for r in recs {
         println!("{:?}\n", r);
     }
 }

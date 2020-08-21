@@ -23,6 +23,10 @@ pub struct Repo {
     connection: SqliteConnection,
 }
 
+pub trait TraitRepoUtils {
+    fn connect() -> Result<Repo, AppError>;
+}
+
 pub trait TraitRepoD01 {
     fn d01_insert(
         &self,
@@ -58,10 +62,12 @@ pub trait TraitRepoD05 {
     ) -> Result<(), AppError>;
 }
 
-impl Repo {
-    pub fn new() -> Repo {
-        Repo {
-            connection: establish_connection(),
+impl TraitRepoUtils for Repo {
+    fn connect() -> Result<Repo, AppError> {
+        let status = establish_connection();
+        match status {
+            Ok(res) => Ok(Repo { connection: res }),
+            Err(err) => Err(err),
         }
     }
 }
@@ -311,13 +317,23 @@ impl TraitRepoD05 for Repo {
 }
 
 /// Connection to Sqlite
-fn establish_connection() -> SqliteConnection {
+fn establish_connection() -> Result<SqliteConnection, AppError> {
     dotenv().ok();
 
     let database_url =
         env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    SqliteConnection::establish(&database_url)
-        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
+    let status = SqliteConnection::establish(&database_url)
+        //  .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
+        .map_err(|err| {
+            AppError::from_diesel_conn_err(
+                err,
+                format!("while connecting to {}", database_url).as_str(),
+            )
+        });
+    match status {
+        Ok(res) => Ok(res),
+        Err(err) => Err(err),
+    }
 }
 
 /// Security for UUID don't garrented without collision (PRIMARY KEY in Sqlite)

@@ -7,7 +7,7 @@ extern crate serde_json;
 // use serde::Serialize;
 use city_time_zone_sqlite::{
     AppError, Repo, TraitRepoD01, TraitRepoD02, TraitRepoD03, TraitRepoD04,
-    TraitRepoD05,
+    TraitRepoD05, TraitRepoUtils,
 };
 use std::collections::HashMap;
 use std::fs::File;
@@ -148,7 +148,13 @@ fn main() {
     let mut temp_hash: HashMapD05 = HashMapD05 {
         map: HashMap::new(),
     };
-    let repo = Repo::new();
+    let status = Repo::connect();
+    let repo = match status {
+        Ok(res) => res,
+        Err(AppError { err_type, message }) => {
+            panic!("{:?} {}", err_type, message)
+        }
+    };
     // d01
     for c in citys.city.clone() {
         let status =
@@ -169,11 +175,9 @@ fn main() {
                 }
                 i += 1;
             }
-            Err(AppError { err_type, message }) => match err_type {
-                _ => {
-                    panic!("{:?} {:?}", err_type, message);
-                }
-            },
+            Err(AppError { err_type, message }) => {
+                panic!("{:?} {}", err_type, message)
+            }
         }
     }
     println!("d01 -> {} record(s) insert", i);
@@ -205,7 +209,7 @@ fn main() {
                         temp_d05.d02.push(rec_d05d02);
                     }
                     Err(AppError { err_type, message }) => {
-                        panic!("{:?} {:?}", err_type, message)
+                        panic!("{:?} {}", err_type, message)
                     }
                 }
             }
@@ -308,7 +312,7 @@ fn main() {
                 }
                 Err(AppError { err_type, message }) => match err_type {
                     _ => {
-                        panic!("{:?} {:?}", err_type, message);
+                        panic!("{:?} {}", err_type, message);
                     }
                 },
             }
@@ -327,7 +331,7 @@ fn main() {
                 }
                 Err(AppError { err_type, message }) => match err_type {
                     _ => {
-                        panic!("{:?} {:?}", err_type, message);
+                        panic!("{:?} {}", err_type, message);
                     }
                 },
             }

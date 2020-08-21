@@ -21,6 +21,18 @@ impl AppError {
         }
     }
 
+    /// Error on diesel connection
+    pub fn from_diesel_conn_err(
+        err: diesel::ConnectionError,
+        context: &str,
+    ) -> AppError {
+        AppError::new(
+            format!("{}: {}", context, err.to_string()).as_str(),
+            ErrorType::Internal,
+        )
+    }
+
+    /// Error deep into diesel operation
     pub fn from_diesel_err(
         err: diesel::result::Error,
         context: &str,
