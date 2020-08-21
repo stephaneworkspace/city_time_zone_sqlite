@@ -7,10 +7,6 @@ use super::{
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
-use std::panic;
-
-// const PATH: &str = "assets/citys.json";
-// const PATH_TZ: &str = "assets/tz_utc.json";
 
 #[derive(Debug, Clone)]
 struct Citys {
@@ -133,10 +129,11 @@ impl TraitHashMapD05 for HashMapD05 {
     }
 }
 
-pub fn seed_db(path_citys: &str, path_time_zones: &str) {
+pub fn seed_db(
+    path_citys: &str,
+    path_time_zones: &str,
+) -> Result<(), AppError> {
     println!("Seed database");
-    // If this project is bigger, i need to put this code in one controller
-    // for better reading of the code
     let mut i: u32 = 0;
     let citys = Citys::new(path_citys);
     let time_zones = TimeZones::new(path_time_zones);
@@ -146,9 +143,7 @@ pub fn seed_db(path_citys: &str, path_time_zones: &str) {
     let status = Repo::connect();
     let repo = match status {
         Ok(res) => res,
-        Err(AppError { err_type, message }) => {
-            panic!("{:?} {}", err_type, message)
-        }
+        Err(err) => return Err(err),
     };
     // d01
     for c in citys.city.clone() {
@@ -170,9 +165,7 @@ pub fn seed_db(path_citys: &str, path_time_zones: &str) {
                 }
                 i += 1;
             }
-            Err(AppError { err_type, message }) => {
-                panic!("{:?} {}", err_type, message)
-            }
+            Err(err) => return Err(err),
         }
     }
     println!("d01 -> {} record(s) insert", i);
@@ -203,9 +196,7 @@ pub fn seed_db(path_citys: &str, path_time_zones: &str) {
                         };
                         temp_d05.d02.push(rec_d05d02);
                     }
-                    Err(AppError { err_type, message }) => {
-                        panic!("{:?} {}", err_type, message)
-                    }
+                    Err(err) => return Err(err),
                 }
             }
         }
@@ -288,10 +279,7 @@ pub fn seed_db(path_citys: &str, path_time_zones: &str) {
                 }
                 i += 1;
             }
-            Err(AppError { err_type, message }) => {
-                println!("{:?}: {}", err_type, message);
-                panic!(t.text)
-            }
+            Err(err) => return Err(err),
         }
     }
     println!("d03 -> {} record(s) insert", i);
@@ -305,11 +293,7 @@ pub fn seed_db(path_citys: &str, path_time_zones: &str) {
                 Ok(()) => {
                     i += 1;
                 }
-                Err(AppError { err_type, message }) => match err_type {
-                    _ => {
-                        panic!("{:?} {}", err_type, message);
-                    }
-                },
+                Err(err) => return Err(err),
             }
         }
     }
@@ -324,13 +308,10 @@ pub fn seed_db(path_citys: &str, path_time_zones: &str) {
                 Ok(()) => {
                     i += 1;
                 }
-                Err(AppError { err_type, message }) => match err_type {
-                    _ => {
-                        panic!("{:?} {}", err_type, message);
-                    }
-                },
+                Err(err) => return Err(err),
             }
         }
     }
     println!("d05 -> {} record(s) insert", i);
+    Ok(())
 }
