@@ -1,7 +1,4 @@
-use diesel::prelude::*; // for COLLATE fn
-use diesel::query_builder::*; // for COLLATE fn
-use diesel::sql_types::Varchar; // for COLLATE
-use diesel::sqlite::Sqlite; // for COLLATE fn
+use diesel::prelude::*;
 use dotenv::dotenv;
 use std::env;
 
@@ -138,26 +135,19 @@ impl TraitRepoD01 for Repo {
         let d05_recs = if search == "" {
             Vec::new()
         } else {
-            let mut _query = d01_citys::table
-                .filter(d01_name.like(format!("%{}%", search)))
-                //.select((d05_d01_citys_id, d05_d02_time_zone_utc_id))
-                .into_boxed::<Sqlite>();
-            /*
-            let d01_status = query
-                .collate("utf8_general_ci".to_string())
-                .load::<D01Citys>(&self.connection)
-                .map_err(|err| {
-                    AppError::from_diesel_err(err, "while query d01_citys")
-                });
-            */
+            /*let query = d01_citys
+                .filter(d01_name.like(format!("%{}%", search)).collate())
+                .load::<D01Citys>(&self.connection);
+            let q = diesel::debug_query::<D01Citys, _>(&query);
+            println!("{:?}", q);*/
             let d01_status = d01_citys
                 .inner_join(d05_link_d01_d02)
                 // .inner_join(d04_link_d02_d03) // don't work now in this
                 //                               // version of diesel
-                .filter(d01_name.like(format!("%{}%", search)))
+                //.filter(d01_name.like(format!("%{}%", search)).collate())
+                .filter(d01_name.eq(search).collate())
                 //.limit(5)
                 .select((d05_d01_citys_id, d05_d02_time_zone_utc_id))
-                //.collate(1)
                 .load::<(String, String)>(&self.connection)
                 .map_err(|err| {
                     AppError::from_diesel_err(err, "while query d01_citys")
@@ -379,42 +369,14 @@ fn unique_violation_security(
     }
 }
 
-#[derive(QueryId)]
-pub struct Collated<T> {
-    query: T,
-    _charset: String,
-}
-
-pub trait Collate: Sized {
-    fn collate(self, charset: String) -> Collated<Self>;
-}
-
-impl<T> Collate for T {
-    fn collate(self, chartset: String) -> Collated<Self> {
-        Collated {
-            query: self,
-            _charset: chartset,
-        }
+// limited https://www.sqlite.org/datatype3.html#collation
+// Collate for remove accent
+diesel_postfix_operator!(Collate, " COLLATE NOCASE"); // Latin1_General_CI_AI");
+                                                      // utf8_general_ci_ai
+pub trait AuxExpressionMethods: Expression + Sized {
+    fn collate(self) -> Collate<Self> {
+        Collate::new(self)
     }
 }
 
-/// Search like with accent UTF8
-impl<T> QueryFragment<Sqlite> for Collated<T>
-where
-    T: QueryFragment<Sqlite>,
-{
-    fn walk_ast(&self, mut out: AstPass<Sqlite>) -> QueryResult<()> {
-        self.query.walk_ast(out.reborrow())?;
-        out.push_sql("COLLATE utf8_general_ci");
-        // out.push_bind_param::<Varchar, _>(&self.charset.as_str())?;
-        Ok(())
-    }
-}
-
-// not util here: https://cloudmaker.dev/pagination/
-// for info
-impl<T: Query> Query for Collated<T> {
-    type SqlType = (T::SqlType, Varchar);
-}
-
-impl<T> RunQueryDsl<SqliteConnection> for Collated<T> {}
+impl<T: Expression> AuxExpressionMethods for T {}

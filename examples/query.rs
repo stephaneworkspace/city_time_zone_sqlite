@@ -16,7 +16,7 @@ fn main() {
             panic!("{:?} {}", err_type, message)
         }
     };
-    let status = repo.d01_search("Genève");
+    let status = repo.d01_search("Geneve");
     let recs = match status {
         Ok(res) => res,
         Err(AppError { err_type, message }) => {
