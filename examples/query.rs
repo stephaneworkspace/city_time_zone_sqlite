@@ -23,8 +23,8 @@ fn main() {
             panic!("{:?} {}", err_type, message)
         }
     };
-    println!("OK");
-    for r in recs {
+    for r in &recs {
         println!("{:?}\n", r);
     }
+    println!("Query with {} result(s)", recs.len());
 }
