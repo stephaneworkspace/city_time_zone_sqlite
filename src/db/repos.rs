@@ -28,18 +28,10 @@ pub trait TraitRepoUtils {
 }
 
 pub trait TraitRepoD01 {
-    fn d01_insert(
-        &self,
-        country: &str,
-        name: &str,
-        lat: f32,
-        lng: f32,
-    ) -> Result<String, AppError>;
+    fn d01_insert(&self, country: &str, name: &str, lat: f32, lng: f32)
+        -> Result<String, AppError>;
     fn d01_search(&self, search: &str) -> Result<Vec<DtoCitys>, AppError>;
-    fn d01_search_compact(
-        &self,
-        search: &str,
-    ) -> Result<Vec<DtoCitysCompact>, AppError>;
+    fn d01_search_compact(&self, search: &str) -> Result<Vec<DtoCitysCompact>, AppError>;
 }
 
 pub trait TraitRepoD02 {
@@ -48,9 +40,7 @@ pub trait TraitRepoD02 {
 
 pub trait TraitRepoD03 {
     fn d03_insert(&self, offset: f32, text: &str) -> Result<String, AppError>;
-    fn d03_find_all_compact_all(
-        &self,
-    ) -> Result<Vec<DtoTimeZoneCompact>, AppError>;
+    fn d03_find_all_compact(&self) -> Result<Vec<DtoTimeZoneCompact>, AppError>;
 }
 
 pub trait TraitRepoD04 {
@@ -104,9 +94,7 @@ impl TraitRepoD01 for Repo {
             let status = diesel::insert_into(d01_citys::table)
                 .values(&new_d01)
                 .execute(&self.connection)
-                .map_err(|err| {
-                    AppError::from_diesel_err(err, "while insert d01_citys")
-                });
+                .map_err(|err| AppError::from_diesel_err(err, "while insert d01_citys"));
 
             let res = unique_violation_security(status, uuid.to_string(), i);
             if !res.0 {
@@ -152,9 +140,7 @@ impl TraitRepoD01 for Repo {
                 .select((d05_d01_citys_id, d05_d02_time_zone_utc_id))
                 .order_by(d01_name_search)
                 .load::<(String, String)>(&self.connection)
-                .map_err(|err| {
-                    AppError::from_diesel_err(err, "while query d01_citys")
-                });
+                .map_err(|err| AppError::from_diesel_err(err, "while query d01_citys"));
             match d01_status {
                 Ok(res) => res,
                 Err(err) => return Err(err),
@@ -165,9 +151,7 @@ impl TraitRepoD01 for Repo {
             let d01_status = d01_citys
                 .find(&rec.0)
                 .first::<D01Citys>(&self.connection)
-                .map_err(|err| {
-                    AppError::from_diesel_err(err, "while find d01_citys")
-                });
+                .map_err(|err| AppError::from_diesel_err(err, "while find d01_citys"));
             let d01_rec = match d01_status {
                 Ok(res) => res,
                 Err(err) => return Err(err),
@@ -175,12 +159,7 @@ impl TraitRepoD01 for Repo {
             let d02_status = d02_time_zone_utc
                 .find(&rec.1)
                 .first::<D02TimeZoneUtc>(&self.connection)
-                .map_err(|err| {
-                    AppError::from_diesel_err(
-                        err,
-                        "while find d02_time_zone_utc",
-                    )
-                });
+                .map_err(|err| AppError::from_diesel_err(err, "while find d02_time_zone_utc"));
             let d02_rec = match d02_status {
                 Ok(res) => res,
                 Err(err) => return Err(err),
@@ -189,12 +168,7 @@ impl TraitRepoD01 for Repo {
                 .filter(d04_d02_time_zone_utc_id.eq(&d02_rec.d02_id))
                 .select(d04_d03_time_zone_info_id)
                 .load::<String>(&self.connection)
-                .map_err(|err| {
-                    AppError::from_diesel_err(
-                        err,
-                        "while filter d03_time_zone_info",
-                    )
-                });
+                .map_err(|err| AppError::from_diesel_err(err, "while filter d03_time_zone_info"));
             let d04_recs = match d04_status {
                 Ok(res) => res,
                 Err(err) => return Err(err),
@@ -204,12 +178,7 @@ impl TraitRepoD01 for Repo {
                 let d03_status = d03_time_zone_info
                     .find(&d04_rec)
                     .first::<D03TimeZoneInfo>(&self.connection)
-                    .map_err(|err| {
-                        AppError::from_diesel_err(
-                            err,
-                            "while find d03_time_zone_info",
-                        )
-                    });
+                    .map_err(|err| AppError::from_diesel_err(err, "while find d03_time_zone_info"));
                 let d03_rec = match d03_status {
                     Ok(res) => res,
                     Err(err) => return Err(err),
@@ -227,10 +196,7 @@ impl TraitRepoD01 for Repo {
     }
 
     /// Search for web speed query without unececary field like id -> uuid
-    fn d01_search_compact(
-        &self,
-        search: &str,
-    ) -> Result<Vec<DtoCitysCompact>, AppError> {
+    fn d01_search_compact(&self, search: &str) -> Result<Vec<DtoCitysCompact>, AppError> {
         let d05_recs = if search == "" {
             Vec::new()
         } else {
@@ -244,9 +210,7 @@ impl TraitRepoD01 for Repo {
                 .select((d05_d01_citys_id, d05_d02_time_zone_utc_id))
                 .order_by(d01_name_search)
                 .load::<(String, String)>(&self.connection)
-                .map_err(|err| {
-                    AppError::from_diesel_err(err, "while query d01_citys")
-                });
+                .map_err(|err| AppError::from_diesel_err(err, "while query d01_citys"));
             match d01_status {
                 Ok(res) => res,
                 Err(err) => return Err(err),
@@ -257,9 +221,7 @@ impl TraitRepoD01 for Repo {
             let d01_status = d01_citys
                 .find(&rec.0)
                 .first::<D01Citys>(&self.connection)
-                .map_err(|err| {
-                    AppError::from_diesel_err(err, "while find d01_citys")
-                });
+                .map_err(|err| AppError::from_diesel_err(err, "while find d01_citys"));
             let d01_rec = match d01_status {
                 Ok(res) => res,
                 Err(err) => return Err(err),
@@ -267,12 +229,7 @@ impl TraitRepoD01 for Repo {
             let d02_status = d02_time_zone_utc
                 .find(&rec.1)
                 .first::<D02TimeZoneUtc>(&self.connection)
-                .map_err(|err| {
-                    AppError::from_diesel_err(
-                        err,
-                        "while find d02_time_zone_utc",
-                    )
-                });
+                .map_err(|err| AppError::from_diesel_err(err, "while find d02_time_zone_utc"));
             let d02_rec = match d02_status {
                 Ok(res) => res,
                 Err(err) => return Err(err),
@@ -281,12 +238,7 @@ impl TraitRepoD01 for Repo {
                 .filter(d04_d02_time_zone_utc_id.eq(&d02_rec.d02_id))
                 .select(d04_d03_time_zone_info_id)
                 .load::<String>(&self.connection)
-                .map_err(|err| {
-                    AppError::from_diesel_err(
-                        err,
-                        "while filter d03_time_zone_info",
-                    )
-                });
+                .map_err(|err| AppError::from_diesel_err(err, "while filter d03_time_zone_info"));
             let d04_recs = match d04_status {
                 Ok(res) => res,
                 Err(err) => return Err(err),
@@ -296,12 +248,7 @@ impl TraitRepoD01 for Repo {
                 let d03_status = d03_time_zone_info
                     .find(&d04_rec)
                     .first::<D03TimeZoneInfo>(&self.connection)
-                    .map_err(|err| {
-                        AppError::from_diesel_err(
-                            err,
-                            "while find d03_time_zone_info",
-                        )
-                    });
+                    .map_err(|err| AppError::from_diesel_err(err, "while find d03_time_zone_info"));
                 let d03_rec = match d03_status {
                     Ok(res) => res,
                     Err(err) => return Err(err),
@@ -341,9 +288,7 @@ impl TraitRepoD02 for Repo {
         let status = diesel::insert_into(d02_time_zone_utc::table)
             .values(&new_d02)
             .execute(&self.connection)
-            .map_err(|err| {
-                AppError::from_diesel_err(err, "while insert d02_time_zone_utc")
-            });
+            .map_err(|err| AppError::from_diesel_err(err, "while insert d02_time_zone_utc"));
 
         match status {
             Err(err) => Err(err),
@@ -365,12 +310,7 @@ impl TraitRepoD03 for Repo {
         let status = diesel::insert_into(d03_time_zone_info::table)
             .values(&new_d03)
             .execute(&self.connection)
-            .map_err(|err| {
-                AppError::from_diesel_err(
-                    err,
-                    "while insert d03_time_zone_info",
-                )
-            });
+            .map_err(|err| AppError::from_diesel_err(err, "while insert d03_time_zone_info"));
 
         match status {
             Err(err) => Err(err),
@@ -379,18 +319,11 @@ impl TraitRepoD03 for Repo {
     }
 
     /// Find all d03 records for a list of timezone with offset
-    fn d03_find_all_compact_all(
-        &self,
-    ) -> Result<Vec<DtoTimeZoneCompact>, AppError> {
+    fn d03_find_all_compact(&self) -> Result<Vec<DtoTimeZoneCompact>, AppError> {
         let d03_status = d03_time_zone_info
             .order_by(d03_offset)
             .load::<D03TimeZoneInfo>(&self.connection)
-            .map_err(|err| {
-                AppError::from_diesel_err(
-                    err,
-                    "while final all d03_time_zone_info",
-                )
-            });
+            .map_err(|err| AppError::from_diesel_err(err, "while final all d03_time_zone_info"));
         let d03_recs = match d03_status {
             Ok(res) => res,
             Err(err) => return Err(err),
@@ -420,9 +353,7 @@ impl TraitRepoD04 for Repo {
         let status = diesel::insert_into(d04_link_d02_d03::table)
             .values(&new_d04)
             .execute(&self.connection)
-            .map_err(|err| {
-                AppError::from_diesel_err(err, "while insert d04_link_d02_d03")
-            });
+            .map_err(|err| AppError::from_diesel_err(err, "while insert d04_link_d02_d03"));
 
         match status {
             Err(err) => Err(err),
@@ -432,11 +363,7 @@ impl TraitRepoD04 for Repo {
 }
 
 impl TraitRepoD05 for Repo {
-    fn d05_insert(
-        &self,
-        d01_citys_id: &str,
-        d02_time_zone_utc_id: &str,
-    ) -> Result<(), AppError> {
+    fn d05_insert(&self, d01_citys_id: &str, d02_time_zone_utc_id: &str) -> Result<(), AppError> {
         let new_d05 = InsertD05 {
             d05_d01_citys_id: d01_citys_id,
             d05_d02_time_zone_utc_id: d02_time_zone_utc_id,
@@ -445,9 +372,7 @@ impl TraitRepoD05 for Repo {
         let status = diesel::insert_into(d05_link_d01_d02::table)
             .values(&new_d05)
             .execute(&self.connection)
-            .map_err(|err| {
-                AppError::from_diesel_err(err, "while insert d05_link_d01_d02")
-            });
+            .map_err(|err| AppError::from_diesel_err(err, "while insert d05_link_d01_d02"));
 
         match status {
             Err(err) => Err(err),
@@ -460,8 +385,7 @@ impl TraitRepoD05 for Repo {
 fn establish_connection() -> Result<SqliteConnection, AppError> {
     dotenv().ok();
 
-    let database_url =
-        env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let status = SqliteConnection::establish(&database_url)
         //  .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
         .map_err(|err| {
@@ -488,10 +412,7 @@ fn unique_violation_security(
                 if i >= MAX_SQL_INSERT_UNIQUE {
                     return (true, Result::Err(AppError { err_type, message }));
                 } else {
-                    return (
-                        false,
-                        Result::Err(AppError { err_type, message }),
-                    );
+                    return (false, Result::Err(AppError { err_type, message }));
                 }
             } else {
                 return (true, Result::Err(AppError { err_type, message }));
