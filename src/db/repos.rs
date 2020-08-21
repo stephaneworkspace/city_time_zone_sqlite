@@ -1,4 +1,4 @@
-use super::dto::DtoCitys;
+use super::dto::{DtoCitys, DtoCitysCompact, DtoTimeZoneCompact};
 use super::errors::{AppError, ErrorType};
 use super::models::*;
 use super::schema::d01_citys;
@@ -36,6 +36,10 @@ pub trait TraitRepoD01 {
         lng: f32,
     ) -> Result<String, AppError>;
     fn d01_search(&self, search: &str) -> Result<Vec<DtoCitys>, AppError>;
+    fn d01_search_compact(
+        &self,
+        search: &str,
+    ) -> Result<Vec<DtoCitysCompact>, AppError>;
 }
 
 pub trait TraitRepoD02 {
@@ -137,11 +141,6 @@ impl TraitRepoD01 for Repo {
         let d05_recs = if search == "" {
             Vec::new()
         } else {
-            /*let query = d01_citys
-                .filter(d01_name.like(format!("%{}%", search)).collate())
-                .load::<D01Citys>(&self.connection);
-            let q = diesel::debug_query::<D01Citys, _>(&query);
-            println!("{:?}", q);*/
             let d01_status = d01_citys
                 .inner_join(d05_link_d01_d02)
                 // .inner_join(d04_link_d02_d03) // don't work now in this
@@ -219,6 +218,106 @@ impl TraitRepoD01 for Repo {
                 d01_rec: d01_rec,
                 d02_rec: d02_rec,
                 d03_recs: d03_recs,
+            };
+            dto_recs.push(dto_rec);
+        }
+        Ok(dto_recs)
+    }
+
+    fn d01_search_compact(
+        &self,
+        search: &str,
+    ) -> Result<Vec<DtoCitysCompact>, AppError> {
+        let d05_recs = if search == "" {
+            Vec::new()
+        } else {
+            let d01_status = d01_citys
+                .inner_join(d05_link_d01_d02)
+                // .inner_join(d04_link_d02_d03) // don't work now in this
+                //                               // version of diesel
+                .filter(d01_name_search.like(format!("%{}%", search))) // collate only work on eq
+                //.filter(d01_name.eq(search).collate())
+                //.limit(5)
+                .select((d05_d01_citys_id, d05_d02_time_zone_utc_id))
+                .load::<(String, String)>(&self.connection)
+                .map_err(|err| {
+                    AppError::from_diesel_err(err, "while query d01_citys")
+                });
+            match d01_status {
+                Ok(res) => res,
+                Err(err) => return Err(err),
+            }
+        };
+        let mut dto_recs: Vec<DtoCitysCompact> = Vec::new();
+        for rec in &d05_recs {
+            let d01_status = d01_citys
+                .find(&rec.0)
+                .first::<D01Citys>(&self.connection)
+                .map_err(|err| {
+                    AppError::from_diesel_err(err, "while find d01_citys")
+                });
+            let d01_rec = match d01_status {
+                Ok(res) => res,
+                Err(err) => return Err(err),
+            };
+            let d02_status = d02_time_zone_utc
+                .find(&rec.1)
+                .first::<D02TimeZoneUtc>(&self.connection)
+                .map_err(|err| {
+                    AppError::from_diesel_err(
+                        err,
+                        "while find d02_time_zone_utc",
+                    )
+                });
+            let d02_rec = match d02_status {
+                Ok(res) => res,
+                Err(err) => return Err(err),
+            };
+            let d04_status = d04_link_d02_d03
+                .filter(d04_d02_time_zone_utc_id.eq(&d02_rec.d02_id))
+                .select(d04_d03_time_zone_info_id)
+                .load::<String>(&self.connection)
+                .map_err(|err| {
+                    AppError::from_diesel_err(
+                        err,
+                        "while filter d03_time_zone_info",
+                    )
+                });
+            let d04_recs = match d04_status {
+                Ok(res) => res,
+                Err(err) => return Err(err),
+            };
+            let mut d03_recs: Vec<D03TimeZoneInfo> = Vec::new();
+            for d04_rec in d04_recs {
+                let d03_status = d03_time_zone_info
+                    .find(&d04_rec)
+                    .first::<D03TimeZoneInfo>(&self.connection)
+                    .map_err(|err| {
+                        AppError::from_diesel_err(
+                            err,
+                            "while find d03_time_zone_info",
+                        )
+                    });
+                let d03_rec = match d03_status {
+                    Ok(res) => res,
+                    Err(err) => return Err(err),
+                };
+                d03_recs.push(d03_rec);
+            }
+            let mut d03_recs_compact: Vec<DtoTimeZoneCompact> = Vec::new();
+            for r in d03_recs {
+                d03_recs_compact.push(DtoTimeZoneCompact {
+                    offset: r.d03_offset,
+                    text: r.d03_text,
+                });
+            }
+            let dto_rec = DtoCitysCompact {
+                country: d01_rec.d01_country,
+                name: d01_rec.d01_name,
+                lat: d01_rec.d01_lat,
+                lng: d01_rec.d01_lng,
+                tz_name: d02_rec.d02_name,
+                tz: d03_recs_compact,
             };
             dto_recs.push(dto_rec);
         }
