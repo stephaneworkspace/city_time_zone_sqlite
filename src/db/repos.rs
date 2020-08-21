@@ -48,6 +48,9 @@ pub trait TraitRepoD02 {
 
 pub trait TraitRepoD03 {
     fn d03_insert(&self, offset: f32, text: &str) -> Result<String, AppError>;
+    fn d03_find_all_compact_all(
+        &self,
+    ) -> Result<Vec<DtoTimeZoneCompact>, AppError>;
 }
 
 pub trait TraitRepoD04 {
@@ -135,8 +138,6 @@ impl TraitRepoD01 for Repo {
     ///     .expect("Error query d01_city -> d05_link_d01_d02")
     ///     .grouped_by(&d01_rec);
     /// let res = d01_rec.clone().into_iter().zip(d05_rec).collect::<Vec<_>>();
-    ///
-    /// TODO: order by
     fn d01_search(&self, search: &str) -> Result<Vec<DtoCitys>, AppError> {
         let d05_recs = if search == "" {
             Vec::new()
@@ -149,6 +150,7 @@ impl TraitRepoD01 for Repo {
                 //.filter(d01_name.eq(search).collate())
                 //.limit(5)
                 .select((d05_d01_citys_id, d05_d02_time_zone_utc_id))
+                .order_by(d01_name_search)
                 .load::<(String, String)>(&self.connection)
                 .map_err(|err| {
                     AppError::from_diesel_err(err, "while query d01_citys")
@@ -224,6 +226,7 @@ impl TraitRepoD01 for Repo {
         Ok(dto_recs)
     }
 
+    /// Search for web speed query without unececary field like id -> uuid
     fn d01_search_compact(
         &self,
         search: &str,
@@ -239,6 +242,7 @@ impl TraitRepoD01 for Repo {
                 //.filter(d01_name.eq(search).collate())
                 //.limit(5)
                 .select((d05_d01_citys_id, d05_d02_time_zone_utc_id))
+                .order_by(d01_name_search)
                 .load::<(String, String)>(&self.connection)
                 .map_err(|err| {
                     AppError::from_diesel_err(err, "while query d01_citys")
@@ -304,9 +308,9 @@ impl TraitRepoD01 for Repo {
                 };
                 d03_recs.push(d03_rec);
             }
-            let mut d03_recs_compact: Vec<DtoTimeZoneCompact> = Vec::new();
+            let mut dto_recs_compact_tz: Vec<DtoTimeZoneCompact> = Vec::new();
             for r in d03_recs {
-                d03_recs_compact.push(DtoTimeZoneCompact {
+                dto_recs_compact_tz.push(DtoTimeZoneCompact {
                     offset: r.d03_offset,
                     text: r.d03_text,
                 });
@@ -317,7 +321,7 @@ impl TraitRepoD01 for Repo {
                 lat: d01_rec.d01_lat,
                 lng: d01_rec.d01_lng,
                 tz_name: d02_rec.d02_name,
-                tz: d03_recs_compact,
+                tz: dto_recs_compact_tz,
             };
             dto_recs.push(dto_rec);
         }
@@ -372,6 +376,33 @@ impl TraitRepoD03 for Repo {
             Err(err) => Err(err),
             _ => Ok(uuid),
         }
+    }
+
+    /// Find all d03 records for a list of timezone with offset
+    fn d03_find_all_compact_all(
+        &self,
+    ) -> Result<Vec<DtoTimeZoneCompact>, AppError> {
+        let d03_status = d03_time_zone_info
+            .order_by(d03_offset)
+            .load::<D03TimeZoneInfo>(&self.connection)
+            .map_err(|err| {
+                AppError::from_diesel_err(
+                    err,
+                    "while final all d03_time_zone_info",
+                )
+            });
+        let d03_recs = match d03_status {
+            Ok(res) => res,
+            Err(err) => return Err(err),
+        };
+        let mut dto_recs_compact_tz: Vec<DtoTimeZoneCompact> = Vec::new();
+        for r in d03_recs {
+            dto_recs_compact_tz.push(DtoTimeZoneCompact {
+                offset: r.d03_offset,
+                text: r.d03_text,
+            });
+        }
+        Ok(dto_recs_compact_tz)
     }
 }
 
