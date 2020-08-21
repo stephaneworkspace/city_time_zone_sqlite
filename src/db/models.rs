@@ -3,7 +3,7 @@ use super::schema::{
     d05_link_d01_d02,
 };
 
-#[derive(Serialize, Queryable, Identifiable, Debug)]
+#[derive(Serialize, Deserialize, Queryable, Identifiable, Debug)]
 #[table_name = "d01_citys"]
 #[primary_key(d01_id)]
 pub struct D01Citys {
