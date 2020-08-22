@@ -15,8 +15,10 @@ cargo install diesel_cli --no-default-features --features "sqlite"
 
 # Seed the database
 
-For create the db (this take 7 minutes ~)
-(this delete the db in .env)
+For create the db (this take 7 minutes ~ on my mac book air end 2019 and 33
+minutes ~ on vps single core from ovh)
+
+Warning : this delete the db in .env (city_time_zone.db)
 ````
 ./seed.sh
 ````
