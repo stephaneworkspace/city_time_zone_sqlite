@@ -17,8 +17,7 @@ cargo install diesel_cli --no-default-features --features "sqlite"
 
 For create the db
 
-This take 7 minutes ~ on my mac book air end 2019 and 33 minutes ~ on simple vps
-from ovh (CPU: Intel (Haswell, no TSX) (1) @ 2.394GH / Memory: 526MiB / 1949MiB)
+This take 7 minutes ~ on my mac book air end 2019 (CPU: (2) @ 1.5GH i5 / Memory 8Gb) and 33 minutes ~ on simple vps from ovh (CPU: Intel (Haswell, no TSX) (1) @ 2.394GH / Memory: 1949MiB)
 
 Warning : this delete the db in .env (city_time_zone.db)
 ````
