@@ -48,8 +48,7 @@ pub trait TraitRepoD02 {
 
 pub trait TraitRepoD03 {
     fn d03_insert(&self, offset: f32, text: &str) -> Result<String, AppError>;
-    fn d03_find_all_compact(&self)
-        -> Result<Vec<DtoTimeZoneCompact>, AppError>;
+    fn d03_find_all(&self) -> Result<Vec<D03TimeZoneInfo>, AppError>;
 }
 
 pub trait TraitRepoD04 {
@@ -384,9 +383,7 @@ impl TraitRepoD03 for Repo {
     }
 
     /// Find all d03 records for a list of timezone with offset
-    fn d03_find_all_compact(
-        &self,
-    ) -> Result<Vec<DtoTimeZoneCompact>, AppError> {
+    fn d03_find_all(&self) -> Result<Vec<D03TimeZoneInfo>, AppError> {
         let d03_status = d03_time_zone_info
             .order_by(d03_offset)
             .load::<D03TimeZoneInfo>(&self.connection)
@@ -400,14 +397,7 @@ impl TraitRepoD03 for Repo {
             Ok(res) => res,
             Err(err) => return Err(err),
         };
-        let mut dto_recs_compact_tz: Vec<DtoTimeZoneCompact> = Vec::new();
-        for r in d03_recs {
-            dto_recs_compact_tz.push(DtoTimeZoneCompact {
-                offset: r.d03_offset,
-                text: r.d03_text,
-            });
-        }
-        Ok(dto_recs_compact_tz)
+        Ok(d03_recs)
     }
 }
 
