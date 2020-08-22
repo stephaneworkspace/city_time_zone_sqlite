@@ -3,7 +3,7 @@
 On OSX:
 ````
 brew install sqlite3
-cargo install diesel_cli
+cargo install diesel_cli --no-default-features --features "sqlite"
 ````
 
 On Debian
