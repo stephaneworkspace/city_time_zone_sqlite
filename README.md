@@ -6,13 +6,23 @@ brew install sqlite3
 cargo install diesel_cli
 ````
 
+On Debian
+````
+sudo apt-get install sqlite3
+sudo apt-get install libsqlite3-dev
+cargo install diesel_cli --no-default-features --features "sqlite"
+````
+
+# Seed the database
+
 For create the db (this take 7 minutes ~)
 (this delete the db in .env)
 ````
 ./seed.sh
 ````
 
-For query
+# Query cli
+
 ````
 cargo run --example query Geneve
 cargo run --example query -- --help
