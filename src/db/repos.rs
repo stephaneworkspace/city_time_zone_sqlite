@@ -145,7 +145,10 @@ impl TraitRepoD01 for Repo {
                 .inner_join(d05_link_d01_d02)
                 // .inner_join(d04_link_d02_d03) // don't work now in this
                 //                               // version of diesel
-                .filter(d01_name_search.like(format!("%{}%", search))) // collate only work on eq
+                .filter(
+                    d01_name_search
+                        .like(format!("%{}%", unidecode(&search).as_str())),
+                ) // collate only work on eq
                 //.filter(d01_name.eq(search).collate())
                 //.limit(5)
                 .select((d05_d01_citys_id, d05_d02_time_zone_utc_id))
@@ -237,7 +240,10 @@ impl TraitRepoD01 for Repo {
                 .inner_join(d05_link_d01_d02)
                 // .inner_join(d04_link_d02_d03) // don't work now in this
                 //                               // version of diesel
-                .filter(d01_name_search.like(format!("%{}%", search))) // collate only work on eq
+                .filter(
+                    d01_name_search
+                        .like(format!("%{}%", unidecode(&search).as_str())),
+                ) // collate only work on eq
                 //.filter(d01_name.eq(search).collate())
                 //.limit(5)
                 .select((d05_d01_citys_id, d05_d02_time_zone_utc_id))
