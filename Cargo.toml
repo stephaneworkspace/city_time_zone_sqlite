@@ -3,6 +3,10 @@ name = "city_time_zone_sqlite"
 version = "0.1.0"
 authors = ["stephaneworkspace <s.bressani@bluewin.ch>"]
 edition = "2018"
+documentation = "https://docs.rs/crate/city_time_zone_sqlite"
+repository = "https://github.com/stephaneworkspace/city_time_zone_sqlite"
+description = "City query search"
+license-file = "LICENSE"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
